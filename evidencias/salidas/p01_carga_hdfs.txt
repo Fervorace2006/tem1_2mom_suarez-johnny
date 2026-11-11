@@ -1,0 +1,4 @@
+Found 1 items
+-rw-r--r--   1 root root      2.2 M 2026-11-11 15:06 /user/hive/raw/superstore/superstore.csv
+Lineas del archivo (incluye cabecera):
+9995

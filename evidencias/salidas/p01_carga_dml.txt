@@ -1,0 +1,122 @@
+### Ejecución: hql/p01_carga_dml.hql
+### Fecha: 2026-11-11 11:08:33
+### Comando: beeline -u jdbc:hive2://localhost:10000 -n root -f p01_carga_dml.hql
+
+Connecting to jdbc:hive2://localhost:10000
+Connected to: Apache Hive (version 3.1.3)
+Driver: Hive JDBC (version 3.1.3)
+Transaction isolation: TRANSACTION_REPEATABLE_READ
+=========================
+ el CSV (convertido a
+=========================
+0: jdbc:hive2://localhost:10000> USE superstore;
+No rows affected (0.067 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> SELECT COUNT(*) AS registros_staging FROM stg_s 
+uperstore_raw;
++--------------------+
+| registros_staging  |
++--------------------+
+| 9994               |
++--------------------+
+1 row selected (1.354 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> SELECT row_id, order_id, order_date, ship_date, 
+ product_name, sales, discount, profit
+. . . . . . . . . . . . . . . .> FROM stg_superstore_raw
+. . . . . . . . . . . . . . . .> LIMIT 5;
++---------+-----------------+-------------+-------------+----------------------------------------------------+-----------+-----------+-----------+
+| row_id  |    order_id     | order_date  |  ship_date  |                    product_name                    |   sales   | discount  |  profit   |
++---------+-----------------+-------------+-------------+----------------------------------------------------+-----------+-----------+-----------+
+| 1       | CA-2016-152156  | 11/8/2016   | 11/11/2016  | Bush Somerset Collection Bookcase                  | 261.96    | 0         | 41.9136   |
+| 2       | CA-2016-152156  | 11/8/2016   | 11/11/2016  | Hon Deluxe Fabric Upholstered Stacking Chairs, Rounded Back | 731.94    | 0         | 219.582   |
+| 3       | CA-2016-138688  | 6/12/2016   | 6/16/2016   | Self-Adhesive Address Labels for Typewriters by Universal | 14.62     | 0         | 6.8714    |
+| 4       | US-2015-108966  | 10/11/2015  | 10/18/2015  | Bretford CR4500 Series Slim Rectangular Table      | 957.5775  | 0.45      | -383.031  |
+| 5       | US-2015-108966  | 10/11/2015  | 10/18/2015  | Eldon Fold 'N Roll Cart System                     | 22.368    | 0.2       | 2.5164    |
++---------+-----------------+-------------+-------------+----------------------------------------------------+-----------+-----------+-----------+
+5 rows selected (0.081 seconds)
+0: jdbc:hive2://localhost:10000> 
+ se puede convertir queda NULL)
+s (U+00A0) en textos
+0: jdbc:hive2://localhost:10000> INSERT OVERWRITE TABLE ventas
+. . . . . . . . . . . . . . . .> SELECT
+. . . . . . . . . . . . . . . .>   CAST(TRIM(row_id) AS INT),
+. . . . . . . . . . . . . . . .>   TRIM(order_id),
+. . . . . . . . . . . . . . . .>   TO_DATE(FROM_UNIXTIME(UNIX_TIMESTAMP(TRIM(ord 
+er_date), 'M/d/yyyy'))),
+. . . . . . . . . . . . . . . .>   TO_DATE(FROM_UNIXTIME(UNIX_TIMESTAMP(TRIM(shi 
+p_date),  'M/d/yyyy'))),
+. . . . . . . . . . . . . . . .>   TRIM(ship_mode),
+. . . . . . . . . . . . . . . .>   TRIM(customer_id),
+. . . . . . . . . . . . . . . .>   TRIM(customer_name),
+. . . . . . . . . . . . . . . .>   TRIM(segment),
+. . . . . . . . . . . . . . . .>   TRIM(country),
+. . . . . . . . . . . . . . . .>   TRIM(city),
+. . . . . . . . . . . . . . . .>   TRIM(state),
+. . . . . . . . . . . . . . . .>   LPAD(TRIM(postal_code), 5, '0'),
+. . . . . . . . . . . . . . . .>   TRIM(region),
+. . . . . . . . . . . . . . . .>   TRIM(product_id),
+. . . . . . . . . . . . . . . .>   TRIM(category),
+. . . . . . . . . . . . . . . .>   TRIM(sub_category),
+. . . . . . . . . . . . . . . .>   TRIM(REGEXP_REPLACE(product_name, ' ', ' ')), 
+. . . . . . . . . . . . . . . .>   CAST(TRIM(sales)    AS DECIMAL(12,4)),
+. . . . . . . . . . . . . . . .>   CAST(TRIM(quantity) AS INT),
+. . . . . . . . . . . . . . . .>   CAST(TRIM(discount) AS DECIMAL(4,2)),
+. . . . . . . . . . . . . . . .>   CAST(TRIM(profit)   AS DECIMAL(12,4)),
+. . . . . . . . . . . . . . . .>   YEAR(FROM_UNIXTIME(UNIX_TIMESTAMP(TRIM(order_ date), 'M/d/yyyy'))),
+. . . . . . . . . . . . . . . .>   MONTH(FROM_UNIXTIME(UNIX_TIMESTAMP(TRIM(order 
+_date), 'M/d/yyyy'))),
+. . . . . . . . . . . . . . . .>   DATEDIFF(FROM_UNIXTIME(UNIX_TIMESTAMP(TRIM(sh 
+ip_date),  'M/d/yyyy')),
+. . . . . . . . . . . . . . . .>            FROM_UNIXTIME(UNIX_TIMESTAMP(TRIM(or 
+der_date), 'M/d/yyyy')))
+. . . . . . . . . . . . . . . .> FROM stg_superstore_raw;
+No rows affected (1.409 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> SELECT COUNT(*) AS registros_ventas FROM ventas 
+;
++-------------------+
+| registros_ventas  |
++-------------------+
+| 9994              |
++-------------------+
+1 row selected (0.08 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> SELECT order_year, COUNT(*) AS registros
+. . . . . . . . . . . . . . . .> FROM ventas
+. . . . . . . . . . . . . . . .> GROUP BY order_year
+. . . . . . . . . . . . . . . .> ORDER BY order_year;
++-------------+------------+
+| order_year  | registros  |
++-------------+------------+
+| 2014        | 1993       |
+| 2015        | 2102       |
+| 2016        | 2587       |
+| 2017        | 3312       |
++-------------+------------+
+4 rows selected (2.496 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> SELECT row_id, order_id, order_date, ship_date, 
+ customer_name, region,
+. . . . . . . . . . . . . . . .>        product_name, sales, quantity, discount, 
+ profit
+. . . . . . . . . . . . . . . .> FROM ventas
+. . . . . . . . . . . . . . . .> ORDER BY row_id
+. . . . . . . . . . . . . . . .> LIMIT 10;
++---------+-----------------+-------------+-------------+------------------+---------+----------------------------------------------------+-----------+-----------+-----------+------------+
+| row_id  |    order_id     | order_date  |  ship_date  |  customer_name   | region  |                    product_name                    |   sales   | quantity  | discount  |   profit   |
++---------+-----------------+-------------+-------------+------------------+---------+----------------------------------------------------+-----------+-----------+-----------+------------+
+| 1       | CA-2016-152156  | 2016-11-08  | 2016-11-11  | Claire Gute      | South   | Bush Somerset Collection Bookcase                  | 261.9600  | 2         | 0.00      | 41.9136    |
+| 2       | CA-2016-152156  | 2016-11-08  | 2016-11-11  | Claire Gute      | South   | Hon Deluxe Fabric Upholstered Stacking Chairs, Rounded Back | 731.9400  | 3         | 0.00      | 219.5820   |
+| 3       | CA-2016-138688  | 2016-06-12  | 2016-06-16  | Darrin Van Huff  | West    | Self-Adhesive Address Labels for Typewriters by Universal | 14.6200   | 2         | 0.00      | 6.8714     |
+| 4       | US-2015-108966  | 2015-10-11  | 2015-10-18  | Sean O'Donnell   | South   | Bretford CR4500 Series Slim Rectangular Table      | 957.5775  | 5         | 0.45      | -383.0310  |
+| 5       | US-2015-108966  | 2015-10-11  | 2015-10-18  | Sean O'Donnell   | South   | Eldon Fold 'N Roll Cart System                     | 22.3680   | 2         | 0.20      | 2.5164     |
+| 6       | CA-2014-115812  | 2014-06-09  | 2014-06-14  | Brosina Hoffman  | West    | Eldon Expressions Wood and Plastic Desk Accessories, Cherry Wood | 48.8600   | 7         | 0.00      | 14.1694    |
+| 7       | CA-2014-115812  | 2014-06-09  | 2014-06-14  | Brosina Hoffman  | West    | Newell 322                                         | 7.2800    | 4         | 0.00      | 1.9656     |
+| 8       | CA-2014-115812  | 2014-06-09  | 2014-06-14  | Brosina Hoffman  | West    | Mitel 5320 IP Phone VoIP phone                     | 907.1520  | 6         | 0.20      | 90.7152    |
+| 9       | CA-2014-115812  | 2014-06-09  | 2014-06-14  | Brosina Hoffman  | West    | DXL Angle-View Binders with Locking Rings by Samsill | 18.5040   | 3         | 0.20      | 5.7825     |
+| 10      | CA-2014-115812  | 2014-06-09  | 2014-06-14  | Brosina Hoffman  | West    | Belkin F5C206VTEL 6 Outlet Surge                   | 114.9000  | 5         | 0.00      | 34.4700    |
++---------+-----------------+-------------+-------------+------------------+---------+----------------------------------------------------+-----------+-----------+-----------+------------+
+10 rows selected (1.288 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> Closing: 0: jdbc:hive2://localhost:10000

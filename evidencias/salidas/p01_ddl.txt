@@ -1,0 +1,284 @@
+### Ejecución: hql/p01_ddl.hql
+### Fecha: 2026-11-11 11:07:12
+### Comando: beeline -u jdbc:hive2://localhost:10000 -n root -f p01_ddl.hql
+
+Connecting to jdbc:hive2://localhost:10000
+Connected to: Apache Hive (version 3.1.3)
+Driver: Hive JDBC (version 3.1.3)
+Transaction isolation: TRANSACTION_REPEATABLE_READ
+=========================
+lo de datos (DDL)
+ (staging). Todo STRING,
+ (soporta comillas y comas
+ORC con tipos correctos
+as de fecha.
+=========================
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> CREATE DATABASE IF NOT EXISTS superstore
+. . . . . . . . . . . . . . . .> COMMENT 'Examen 2do momento - Sample Superstore 
+'
+. . . . . . . . . . . . . . . .> LOCATION '/user/hive/warehouse/superstore.db';
+COMMENT 'Examen 2do momento - Sample Superstore'
+LOCATION '/user/hive/warehouse/superstore.db'
+COMMENT 'Examen 2do momento - Sample Superstore'
+LOCATION '/user/hive/warehouse/superstore.db'
+No rows affected (0.251 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> USE superstore;
+No rows affected (0.045 seconds)
+0: jdbc:hive2://localhost:10000> 
+-------------------------
+en HDFS)
+-------------------------
+0: jdbc:hive2://localhost:10000> DROP TABLE IF EXISTS stg_superstore_raw;
+No rows affected (0.08 seconds)
+0: jdbc:hive2://localhost:10000> CREATE EXTERNAL TABLE stg_superstore_raw (
+. . . . . . . . . . . . . . . .>   row_id        STRING,
+. . . . . . . . . . . . . . . .>   order_id      STRING,
+. . . . . . . . . . . . . . . .>   order_date    STRING,
+. . . . . . . . . . . . . . . .>   ship_date     STRING,
+. . . . . . . . . . . . . . . .>   ship_mode     STRING,
+. . . . . . . . . . . . . . . .>   customer_id   STRING,
+. . . . . . . . . . . . . . . .>   customer_name STRING,
+. . . . . . . . . . . . . . . .>   segment       STRING,
+. . . . . . . . . . . . . . . .>   country       STRING,
+. . . . . . . . . . . . . . . .>   city          STRING,
+. . . . . . . . . . . . . . . .>   state         STRING,
+. . . . . . . . . . . . . . . .>   postal_code   STRING,
+. . . . . . . . . . . . . . . .>   region        STRING,
+. . . . . . . . . . . . . . . .>   product_id    STRING,
+. . . . . . . . . . . . . . . .>   category      STRING,
+. . . . . . . . . . . . . . . .>   sub_category  STRING,
+. . . . . . . . . . . . . . . .>   product_name  STRING,
+. . . . . . . . . . . . . . . .>   sales         STRING,
+. . . . . . . . . . . . . . . .>   quantity      STRING,
+. . . . . . . . . . . . . . . .>   discount      STRING,
+. . . . . . . . . . . . . . . .>   profit        STRING
+. . . . . . . . . . . . . . . .> )
+. . . . . . . . . . . . . . . .> COMMENT 'Staging: CSV original Superstore sin t ransformar'
+. . . . . . . . . . . . . . . .> WITH SERDEPROPERTIES (
+. . . . . . . . . . . . . . . .>   'separatorChar' = ',',
+. . . . . . . . . . . . . . . .>   'quoteChar'     = '"',
+. . . . . . . . . . . . . . . .>   'escapeChar'    = '\\'
+. . . . . . . . . . . . . . . .> )
+. . . . . . . . . . . . . . . .> STORED AS TEXTFILE
+. . . . . . . . . . . . . . . .> LOCATION '/user/hive/raw/superstore'
+. . . . . . . . . . . . . . . .> TBLPROPERTIES ('skip.header.line.count' = '1'); 
+row_id        STRING,
+order_id      STRING,
+order_date    STRING,
+ship_date     STRING,
+ship_mode     STRING,
+customer_id   STRING,
+customer_name STRING,
+segment       STRING,
+country       STRING,
+city          STRING,
+state         STRING,
+postal_code   STRING,
+region        STRING,
+product_id    STRING,
+category      STRING,
+sub_category  STRING,
+product_name  STRING,
+sales         STRING,
+quantity      STRING,
+discount      STRING,
+profit        STRING
+)
+COMMENT 'Staging: CSV original Superstore sin transformar'
+WITH SERDEPROPERTIES (
+'separatorChar' = ',',
+'quoteChar'     = '"',
+'escapeChar'    = '\\'
+)
+STORED AS TEXTFILE
+LOCATION '/user/hive/raw/superstore'
+TBLPROPERTIES ('skip.header.line.count' = '1')
+row_id        STRING,
+order_id      STRING,
+order_date    STRING,
+ship_date     STRING,
+ship_mode     STRING,
+customer_id   STRING,
+customer_name STRING,
+segment       STRING,
+country       STRING,
+city          STRING,
+state         STRING,
+postal_code   STRING,
+region        STRING,
+product_id    STRING,
+category      STRING,
+sub_category  STRING,
+product_name  STRING,
+sales         STRING,
+quantity      STRING,
+discount      STRING,
+profit        STRING
+)
+COMMENT 'Staging: CSV original Superstore sin transformar'
+WITH SERDEPROPERTIES (
+'separatorChar' = ',',
+'quoteChar'     = '"',
+'escapeChar'    = '\\'
+)
+STORED AS TEXTFILE
+LOCATION '/user/hive/raw/superstore'
+TBLPROPERTIES ('skip.header.line.count' = '1')
+No rows affected (0.271 seconds)
+0: jdbc:hive2://localhost:10000> 
+-------------------------
+-------------------------
+0: jdbc:hive2://localhost:10000> DROP TABLE IF EXISTS ventas;
+No rows affected (0.027 seconds)
+0: jdbc:hive2://localhost:10000> CREATE TABLE ventas (
+. . . . . . . . . . . . . . . .>   row_id        INT            COMMENT 'Identif 
+icador de fila (PK lógica)',
+. . . . . . . . . . . . . . . .>   order_id      STRING         COMMENT 'Identif 
+icador de la orden (CA-AAAA-NNNNNN)',
+. . . . . . . . . . . . . . . .>   order_date    DATE           COMMENT 'Fecha d 
+el pedido',
+. . . . . . . . . . . . . . . .>   ship_date     DATE           COMMENT 'Fecha d 
+e envío',
+. . . . . . . . . . . . . . . .>   ship_mode     STRING         COMMENT 'Modalid 
+ad de envío',
+. . . . . . . . . . . . . . . .>   customer_id   STRING         COMMENT 'Identif 
+icador del cliente',
+. . . . . . . . . . . . . . . .>   customer_name STRING         COMMENT 'Nombre  
+del cliente',
+. . . . . . . . . . . . . . . .>   segment       STRING         COMMENT 'Segment 
+o: Consumer, Corporate, Home Office',
+. . . . . . . . . . . . . . . .>   country       STRING         COMMENT 'País',
+. . . . . . . . . . . . . . . .>   city          STRING         COMMENT 'Ciudad' 
+,
+. . . . . . . . . . . . . . . .>   state         STRING         COMMENT 'Estado' 
+,
+. . . . . . . . . . . . . . . .>   postal_code   STRING         COMMENT 'Código  
+postal (STRING: conserva ceros a la izquierda)',
+. . . . . . . . . . . . . . . .>   region        STRING         COMMENT 'Región: 
+ Central, East, South, West',
+. . . . . . . . . . . . . . . .>   product_id    STRING         COMMENT 'Identif 
+icador del producto',
+. . . . . . . . . . . . . . . .>   category      STRING         COMMENT 'Categor 
+ía',
+. . . . . . . . . . . . . . . .>   sub_category  STRING         COMMENT 'Subcate 
+goría',
+. . . . . . . . . . . . . . . .>   product_name  STRING         COMMENT 'Nombre  
+del producto',
+. . . . . . . . . . . . . . . .>   sales         DECIMAL(12,4)  COMMENT 'Importe 
+ de venta (USD)',
+. . . . . . . . . . . . . . . .>   quantity      INT            COMMENT 'Unidade 
+s vendidas',
+. . . . . . . . . . . . . . . .>   discount      DECIMAL(4,2)   COMMENT 'Descuen 
+to aplicado (fracción 0-1)',
+. . . . . . . . . . . . . . . .>   profit        DECIMAL(12,4)  COMMENT 'Gananci 
+a/pérdida (USD)',
+. . . . . . . . . . . . . . . .>   order_year    INT            COMMENT 'Derivad 
+o: año del pedido',
+. . . . . . . . . . . . . . . .>   order_month   INT            COMMENT 'Derivad 
+o: mes del pedido',
+. . . . . . . . . . . . . . . .>   days_to_ship  INT            COMMENT 'Derivad 
+o: días entre pedido y envío'
+. . . . . . . . . . . . . . . .> )
+. . . . . . . . . . . . . . . .> COMMENT 'Tabla analítica Superstore tipada'
+. . . . . . . . . . . . . . . .> STORED AS ORC
+. . . . . . . . . . . . . . . .> TBLPROPERTIES ('orc.compress' = 'SNAPPY');
+row_id        INT            COMMENT 'Identificador de fila (PK lógica)',
+order_id      STRING         COMMENT 'Identificador de la orden (CA-AAAA-NNNNNN)',
+order_date    DATE           COMMENT 'Fecha del pedido',
+ship_date     DATE           COMMENT 'Fecha de envío',
+ship_mode     STRING         COMMENT 'Modalidad de envío',
+customer_id   STRING         COMMENT 'Identificador del cliente',
+customer_name STRING         COMMENT 'Nombre del cliente',
+segment       STRING         COMMENT 'Segmento: Consumer, Corporate, Home Office',
+country       STRING         COMMENT 'País',
+city          STRING         COMMENT 'Ciudad',
+state         STRING         COMMENT 'Estado',
+postal_code   STRING         COMMENT 'Código postal (STRING: conserva ceros a la izquierda)',
+region        STRING         COMMENT 'Región: Central, East, South, West',
+product_id    STRING         COMMENT 'Identificador del producto',
+category      STRING         COMMENT 'Categoría',
+sub_category  STRING         COMMENT 'Subcategoría',
+product_name  STRING         COMMENT 'Nombre del producto',
+sales         DECIMAL(12,4)  COMMENT 'Importe de venta (USD)',
+quantity      INT            COMMENT 'Unidades vendidas',
+discount      DECIMAL(4,2)   COMMENT 'Descuento aplicado (fracción 0-1)',
+profit        DECIMAL(12,4)  COMMENT 'Ganancia/pérdida (USD)',
+order_year    INT            COMMENT 'Derivado: año del pedido',
+order_month   INT            COMMENT 'Derivado: mes del pedido',
+days_to_ship  INT            COMMENT 'Derivado: días entre pedido y envío'
+)
+COMMENT 'Tabla analítica Superstore tipada'
+STORED AS ORC
+TBLPROPERTIES ('orc.compress' = 'SNAPPY')
+row_id        INT            COMMENT 'Identificador de fila (PK lógica)',
+order_id      STRING         COMMENT 'Identificador de la orden (CA-AAAA-NNNNNN)',
+order_date    DATE           COMMENT 'Fecha del pedido',
+ship_date     DATE           COMMENT 'Fecha de envío',
+ship_mode     STRING         COMMENT 'Modalidad de envío',
+customer_id   STRING         COMMENT 'Identificador del cliente',
+customer_name STRING         COMMENT 'Nombre del cliente',
+segment       STRING         COMMENT 'Segmento: Consumer, Corporate, Home Office',
+country       STRING         COMMENT 'País',
+city          STRING         COMMENT 'Ciudad',
+state         STRING         COMMENT 'Estado',
+postal_code   STRING         COMMENT 'Código postal (STRING: conserva ceros a la izquierda)',
+region        STRING         COMMENT 'Región: Central, East, South, West',
+product_id    STRING         COMMENT 'Identificador del producto',
+category      STRING         COMMENT 'Categoría',
+sub_category  STRING         COMMENT 'Subcategoría',
+product_name  STRING         COMMENT 'Nombre del producto',
+sales         DECIMAL(12,4)  COMMENT 'Importe de venta (USD)',
+quantity      INT            COMMENT 'Unidades vendidas',
+discount      DECIMAL(4,2)   COMMENT 'Descuento aplicado (fracción 0-1)',
+profit        DECIMAL(12,4)  COMMENT 'Ganancia/pérdida (USD)',
+order_year    INT            COMMENT 'Derivado: año del pedido',
+order_month   INT            COMMENT 'Derivado: mes del pedido',
+days_to_ship  INT            COMMENT 'Derivado: días entre pedido y envío'
+)
+COMMENT 'Tabla analítica Superstore tipada'
+STORED AS ORC
+TBLPROPERTIES ('orc.compress' = 'SNAPPY')
+No rows affected (0.446 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> SHOW TABLES;
++---------------------+
+|      tab_name       |
++---------------------+
+| stg_superstore_raw  |
+| ventas              |
++---------------------+
+2 rows selected (0.075 seconds)
+0: jdbc:hive2://localhost:10000> DESCRIBE ventas;
++----------------+----------------+----------------------------------------------------+
+|    col_name    |   data_type    |                      comment                       |
++----------------+----------------+----------------------------------------------------+
+| row_id         | int            | Identificador de fila (PK lógica)                  |
+| order_id       | string         | Identificador de la orden (CA-AAAA-NNNNNN)         |
+| order_date     | date           | Fecha del pedido                                   |
+| ship_date      | date           | Fecha de envío                                     |
+| ship_mode      | string         | Modalidad de envío                                 |
+| customer_id    | string         | Identificador del cliente                          |
+| customer_name  | string         | Nombre del cliente                                 |
+| segment        | string         | Segmento: Consumer, Corporate, Home Office         |
+| country        | string         | País                                               |
+| city           | string         | Ciudad                                             |
+| state          | string         | Estado                                             |
+| postal_code    | string         | Código postal (STRING: conserva ceros a la izquierda) |
+| region         | string         | Región: Central, East, South, West                 |
+| product_id     | string         | Identificador del producto                         |
+| category       | string         | Categoría                                          |
+| sub_category   | string         | Subcategoría                                       |
+| product_name   | string         | Nombre del producto                                |
+| sales          | decimal(12,4)  | Importe de venta (USD)                             |
+| quantity       | int            | Unidades vendidas                                  |
+| discount       | decimal(4,2)   | Descuento aplicado (fracción 0-1)                  |
+| profit         | decimal(12,4)  | Ganancia/pérdida (USD)                             |
+| order_year     | int            | Derivado: año del pedido                           |
+| order_month    | int            | Derivado: mes del pedido                           |
+| days_to_ship   | int            | Derivado: días entre pedido y envío                |
++----------------+----------------+----------------------------------------------------+
+24 rows selected (0.243 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> Closing: 0: jdbc:hive2://localhost:10000
