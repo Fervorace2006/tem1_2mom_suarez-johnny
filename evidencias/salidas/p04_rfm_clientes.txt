@@ -1,0 +1,225 @@
+### Ejecución: hql/p04_rfm_clientes.hql
+### Fecha: 2026-11-11 11:14:44
+### Comando: beeline -u jdbc:hive2://localhost:10000 -n root -f p04_rfm_clientes.hql
+
+Connecting to jdbc:hive2://localhost:10000
+Connected to: Apache Hive (version 3.1.3)
+Driver: Hive JDBC (version 3.1.3)
+Transaction isolation: TRANSACTION_REPEATABLE_READ
+=========================
+el dataset (2017-12-30).
+ima compra), Frequency
+ ventas).
+): así cada puntuación
+ se adapta a la distribución
+cy DESC)
+ency ASC)
+ary ASC)
+):
+y M>=4
+ o M>=3)  -> fueron buenos y dejaron de comprar
+y M<=2
+ reutilizarla.
+=========================
+0: jdbc:hive2://localhost:10000> USE superstore;
+No rows affected (0.067 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> DROP TABLE IF EXISTS rfm_clientes;
+No rows affected (0.018 seconds)
+0: jdbc:hive2://localhost:10000> CREATE TABLE rfm_clientes STORED AS ORC AS
+. . . . . . . . . . . . . . . .> WITH ref AS (
+. . . . . . . . . . . . . . . .>   SELECT MAX(order_date) AS fecha_ref FROM vent 
+as
+. . . . . . . . . . . . . . . .> ),
+. . . . . . . . . . . . . . . .> base AS (
+. . . . . . . . . . . . . . . .>   SELECT v.customer_id,
+. . . . . . . . . . . . . . . .>          MAX(v.customer_name)                   
+     AS customer_name,
+. . . . . . . . . . . . . . . .>          MAX(v.segment)                         
+     AS segment,
+. . . . . . . . . . . . . . . .>          DATEDIFF(MAX(r.fecha_ref), MAX(v.order 
+_date)) AS recency,
+. . . . . . . . . . . . . . . .>          COUNT(DISTINCT v.order_id)             
+     AS frequency,
+. . . . . . . . . . . . . . . .>          ROUND(SUM(v.sales), 2)                 
+     AS monetary,
+. . . . . . . . . . . . . . . .>          ROUND(SUM(v.profit), 2)                
+     AS ganancia
+. . . . . . . . . . . . . . . .>   FROM ventas v CROSS JOIN ref r
+. . . . . . . . . . . . . . . .>   GROUP BY v.customer_id
+. . . . . . . . . . . . . . . .> ),
+. . . . . . . . . . . . . . . .> scores AS (
+. . . . . . . . . . . . . . . .>   SELECT b.*,
+. . . . . . . . . . . . . . . .>          NTILE(5) OVER (ORDER BY recency DESC)  
+ AS r_score,
+. . . . . . . . . . . . . . . .>          NTILE(5) OVER (ORDER BY frequency ASC) 
+ AS f_score,
+. . . . . . . . . . . . . . . .>          NTILE(5) OVER (ORDER BY monetary ASC)  
+ AS m_score
+. . . . . . . . . . . . . . . .>   FROM base b
+. . . . . . . . . . . . . . . .> )
+. . . . . . . . . . . . . . . .> SELECT s.*,
+. . . . . . . . . . . . . . . .>        CONCAT(CAST(r_score AS STRING), CAST(f_s 
+core AS STRING), CAST(m_score AS STRING)) AS rfm_codigo,
+. . . . . . . . . . . . . . . .>        r_score + f_score + m_score AS rfm_total 
+,
+. . . . . . . . . . . . . . . .>        CASE
+. . . . . . . . . . . . . . . .>          WHEN r_score >= 4 AND f_score >= 4 AND 
+ m_score >= 4        THEN '1. Alto valor (Campeones)'
+. . . . . . . . . . . . . . . .>          WHEN f_score >= 4 AND r_score >= 3     
+                     THEN '2. Recurrentes / Leales'
+. . . . . . . . . . . . . . . .>          WHEN r_score <= 2 AND (f_score >= 3 OR 
+ m_score >= 3)       THEN '3. En riesgo de abandono'
+. . . . . . . . . . . . . . . .>          WHEN r_score >= 4 AND f_score <= 2     
+                     THEN '4. Nuevos / Prometedores'
+. . . . . . . . . . . . . . . .>          WHEN r_score <= 2 AND f_score <= 2 AND 
+ m_score <= 2        THEN '5. Perdidos / Inactivos'
+. . . . . . . . . . . . . . . .>          ELSE '6. Necesitan atencion'
+. . . . . . . . . . . . . . . .>        END AS segmento_rfm
+. . . . . . . . . . . . . . . .> FROM scores s;
+No rows affected (8.64 seconds)
+0: jdbc:hive2://localhost:10000> 
+ F y M
+0: jdbc:hive2://localhost:10000> SELECT (SELECT MAX(order_date) FROM ventas) AS  
+fecha_referencia,
+. . . . . . . . . . . . . . . .>        COUNT(*)                     AS clientes 
+,
+. . . . . . . . . . . . . . . .>        MIN(recency) AS r_min, ROUND(AVG(recency 
+),1) AS r_prom, MAX(recency) AS r_max,
+. . . . . . . . . . . . . . . .>        MIN(frequency) AS f_min, ROUND(AVG(frequ 
+ency),1) AS f_prom, MAX(frequency) AS f_max,
+. . . . . . . . . . . . . . . .>        MIN(monetary) AS m_min, ROUND(AVG(moneta 
+ry),2) AS m_prom, MAX(monetary) AS m_max
+. . . . . . . . . . . . . . . .> FROM rfm_clientes;
++-------------------+-----------+--------+---------+--------+--------+---------+--------+--------+----------+-----------+
+| fecha_referencia  | clientes  | r_min  | r_prom  | r_max  | f_min  | f_prom  | f_max  | m_min  |  m_prom  |   m_max   |
++-------------------+-----------+--------+---------+--------+--------+---------+--------+--------+----------+-----------+
+| 2017-12-30        | 793       | 0      | 146.8   | 1165   | 1      | 6.3     | 17     | 4.83   | 2896.85  | 25043.05  |
++-------------------+-----------+--------+---------+--------+--------+---------+--------+--------+----------+-----------+
+1 row selected (5.872 seconds)
+0: jdbc:hive2://localhost:10000> 
+(justifica los cortes NTILE)
+0: jdbc:hive2://localhost:10000> SELECT r_score AS score,
+. . . . . . . . . . . . . . . .>        CONCAT(MIN(recency), ' - ', MAX(recency) 
+, ' dias') AS rango_recency
+. . . . . . . . . . . . . . . .> FROM rfm_clientes GROUP BY r_score ORDER BY sco 
+re;
++--------+------------------+
+| score  |  rango_recency   |
++--------+------------------+
+| 1      | 225 - 1165 dias  |
+| 2      | 103 - 224 dias   |
+| 3      | 53 - 102 dias    |
+| 4      | 26 - 52 dias     |
+| 5      | 0 - 26 dias      |
++--------+------------------+
+5 rows selected (2.457 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> SELECT f_score AS score,
+. . . . . . . . . . . . . . . .>        CONCAT(MIN(frequency), ' - ', MAX(freque 
+ncy), ' ordenes') AS rango_frequency
+. . . . . . . . . . . . . . . .> FROM rfm_clientes GROUP BY f_score ORDER BY sco 
+re;
++--------+------------------+
+| score  | rango_frequency  |
++--------+------------------+
+| 1      | 1 - 4 ordenes    |
+| 2      | 4 - 5 ordenes    |
+| 3      | 5 - 7 ordenes    |
+| 4      | 7 - 9 ordenes    |
+| 5      | 9 - 17 ordenes   |
++--------+------------------+
+5 rows selected (2.434 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> SELECT m_score AS score,
+. . . . . . . . . . . . . . . .>        CONCAT(MIN(monetary), ' - ', MAX(monetar 
+y), ' USD') AS rango_monetary
+. . . . . . . . . . . . . . . .> FROM rfm_clientes GROUP BY m_score ORDER BY sco 
+re;
++--------+-------------------------+
+| score  |     rango_monetary      |
++--------+-------------------------+
+| 1      | 4.83 - 959.48 USD       |
+| 2      | 964.64 - 1739.69 USD    |
+| 3      | 1744.7 - 2754.22 USD    |
+| 4      | 2767.22 - 4282.94 USD   |
+| 5      | 4299.16 - 25043.05 USD  |
++--------+-------------------------+
+5 rows selected (2.431 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> SELECT segmento_rfm,
+. . . . . . . . . . . . . . . .>        COUNT(*)                                 
+                   AS clientes,
+. . . . . . . . . . . . . . . .>        ROUND(COUNT(*) * 100.0 / SUM(COUNT(*)) O 
+VER (), 2)         AS pct_clientes,
+. . . . . . . . . . . . . . . .>        ROUND(AVG(recency), 1)                   
+                   AS recency_prom,
+. . . . . . . . . . . . . . . .>        ROUND(AVG(frequency), 1)                 
+                   AS frequency_prom,
+. . . . . . . . . . . . . . . .>        ROUND(AVG(monetary), 2)                  
+                   AS monetary_prom,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(monetary), 2)                  
+                   AS ventas_total,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(monetary) * 100 / SUM(SUM(mone 
+tary)) OVER (), 2) AS pct_ventas
+. . . . . . . . . . . . . . . .> FROM rfm_clientes
+. . . . . . . . . . . . . . . .> GROUP BY segmento_rfm
+. . . . . . . . . . . . . . . .> ORDER BY segmento_rfm;
++----------------------------+-----------+---------------+---------------+-----------------+----------------+---------------+-------------+
+|        segmento_rfm        | clientes  | pct_clientes  | recency_prom  | frequency_prom  | monetary_prom  | ventas_total  | pct_ventas  |
++----------------------------+-----------+---------------+---------------+-----------------+----------------+---------------+-------------+
+| 1. Alto valor (Campeones)  | 105       | 13.24         | 24.8          | 9.3             | 5269.17        | 553262.38     | 24.08       |
+| 2. Recurrentes / Leales    | 129       | 16.27         | 50.0          | 8.5             | 2749.46        | 354680.90     | 15.44       |
+| 3. En riesgo de abandono   | 199       | 25.09         | 255.9         | 6.7             | 3480.32        | 692584.33     | 30.15       |
+| 4. Nuevos / Prometedores   | 87        | 10.97         | 25.1          | 4.1             | 1811.13        | 157568.31     | 6.86        |
+| 5. Perdidos / Inactivos    | 119       | 15.01         | 383.1         | 3.4             | 786.76         | 93624.08      | 4.08        |
+| 6. Necesitan atencion      | 154       | 19.42         | 56.4          | 5.4             | 2892.73        | 445481.01     | 19.39       |
++----------------------------+-----------+---------------+---------------+-----------------+----------------+---------------+-------------+
+6 rows selected (3.606 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> SELECT customer_id, customer_name, segment, rec 
+ency, frequency, monetary, ganancia, rfm_codigo
+. . . . . . . . . . . . . . . .> FROM rfm_clientes
+. . . . . . . . . . . . . . . .> WHERE segmento_rfm = '1. Alto valor (Campeones) 
+'
+. . . . . . . . . . . . . . . .> ORDER BY monetary DESC
+. . . . . . . . . . . . . . . .> LIMIT 10;
++--------------+-------------------+--------------+----------+------------+-----------+-----------+-------------+
+| customer_id  |   customer_name   |   segment    | recency  | frequency  | monetary  | ganancia  | rfm_codigo  |
++--------------+-------------------+--------------+----------+------------+-----------+-----------+-------------+
+| AB-10105     | Adrian Barton     | Consumer     | 41       | 10         | 14473.57  | 5444.81   | 455         |
+| KL-16645     | Ken Lonsdale      | Consumer     | 47       | 12         | 14175.23  | 806.86    | 455         |
+| SE-20110     | Sanjit Engle      | Consumer     | 9        | 11         | 12209.44  | 2650.68   | 555         |
+| GT-14710     | Greg Tran         | Consumer     | 36       | 11         | 11820.12  | 2163.43   | 455         |
+| ME-17320     | Maria Etezadi     | Home Office  | 42       | 10         | 10663.73  | 1859.47   | 455         |
+| JL-15835     | John Lee          | Consumer     | 21       | 11         | 9799.92   | 228.91    | 555         |
+| JD-16150     | Justin Deggeller  | Corporate    | 41       | 8          | 8828.03   | 1619.52   | 445         |
+| JE-15715     | Joe Elijah        | Consumer     | 46       | 10         | 8697.84   | 1262.29   | 455         |
+| PK-19075     | Pete Kriz         | Consumer     | 9        | 12         | 8646.93   | 2038.27   | 555         |
+| DR-12940     | Daniel Raglin     | Home Office  | 50       | 8          | 8350.87   | 2869.08   | 445         |
++--------------+-------------------+--------------+----------+------------+-----------+-----------+-------------+
+10 rows selected (1.261 seconds)
+0: jdbc:hive2://localhost:10000> 
+ayor valor histórico)
+0: jdbc:hive2://localhost:10000> SELECT customer_id, customer_name, segment, rec ency, frequency, monetary, ganancia, rfm_codigo
+. . . . . . . . . . . . . . . .> FROM rfm_clientes
+. . . . . . . . . . . . . . . .> WHERE segmento_rfm = '3. En riesgo de abandono' 
+. . . . . . . . . . . . . . . .> ORDER BY monetary DESC
+. . . . . . . . . . . . . . . .> LIMIT 10;
++--------------+-------------------+------------+----------+------------+-----------+-----------+-------------+
+| customer_id  |   customer_name   |  segment   | recency  | frequency  | monetary  | ganancia  | rfm_codigo  |
++--------------+-------------------+------------+----------+------------+-----------+-----------+-------------+
+| TC-20980     | Tamara Chand      | Corporate  | 399      | 5          | 19052.22  | 8981.32   | 125         |
+| SC-20095     | Sanjit Chand      | Consumer   | 349      | 9          | 14142.33  | 5757.41   | 155         |
+| BM-11140     | Becky Martin      | Consumer   | 307      | 4          | 11789.63  | -1659.96  | 125         |
+| CJ-12010     | Caroline Jumper   | Consumer   | 189      | 8          | 11164.97  | 858.74    | 245         |
+| CL-12565     | Clay Ludtke       | Consumer   | 284      | 12         | 10880.55  | 1933.78   | 155         |
+| BS-11365     | Bill Shonely      | Corporate  | 558      | 5          | 10501.65  | 2616.06   | 125         |
+| EH-13765     | Edward Hooks      | Corporate  | 135      | 12         | 10310.88  | 1393.52   | 255         |
+| HW-14935     | Helen Wasserman   | Corporate  | 117      | 8          | 9300.25   | 2164.16   | 245         |
+| TB-21400     | Tom Boeckenhauer  | Consumer   | 202      | 7          | 9133.99   | 2798.37   | 235         |
+| PF-19120     | Peter Fuller      | Consumer   | 835      | 4          | 9062.86   | -614.29   | 125         |
++--------------+-------------------+------------+----------+------------+-----------+-----------+-------------+
+10 rows selected (1.25 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> Closing: 0: jdbc:hive2://localhost:10000
