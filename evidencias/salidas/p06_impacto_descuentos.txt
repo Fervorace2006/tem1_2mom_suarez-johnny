@@ -1,36 +1,48 @@
 ### Ejecución: hql/p06_impacto_descuentos.hql
-### Fecha: 2026-11-11 11:17:33
+### Fecha: 2026-11-11 11:22:23
 ### Comando: beeline -u jdbc:hive2://localhost:10000 -n root -f p06_impacto_descuentos.hql
 
 Connecting to jdbc:hive2://localhost:10000
 Connected to: Apache Hive (version 3.1.3)
 Driver: Hive JDBC (version 3.1.3)
 Transaction isolation: TRANSACTION_REPEATABLE_READ
-0: jdbc:hive2://localhost:10000> -- Pregunta 6. Análisis del impacto de los desc uentos
+uentos
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> USE superstore;
-No rows affected (0.042 seconds)
+No rows affected (0.068 seconds)
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> DROP VIEW IF EXISTS v_ventas_descuento;
-No rows affected (0.018 seconds)
+No rows affected (0.016 seconds)
 0: jdbc:hive2://localhost:10000> CREATE VIEW v_ventas_descuento AS
 . . . . . . . . . . . . . . . .> SELECT v.*,
-. . . . . . . . . . . . . . . .>        CASE WHEN discount = 0    THEN '1. Sin d escuento (0%)'
-. . . . . . . . . . . . . . . .>             WHEN discount <= 0.20 THEN '2. Bajo  (0-20%]'
-. . . . . . . . . . . . . . . .>             WHEN discount <= 0.50 THEN '3. Medi o (20-50%]'
-. . . . . . . . . . . . . . . .>             ELSE                       '4. Alto  (>50%)' END AS rango_descuento
+. . . . . . . . . . . . . . . .>        CASE WHEN discount = 0    THEN '1. Sin d 
+escuento (0%)'
+. . . . . . . . . . . . . . . .>             WHEN discount <= 0.20 THEN '2. Bajo 
+ (0-20%]'
+. . . . . . . . . . . . . . . .>             WHEN discount <= 0.50 THEN '3. Medi 
+o (20-50%]'
+. . . . . . . . . . . . . . . .>             ELSE                       '4. Alto 
+ (>50%)' END AS rango_descuento
 . . . . . . . . . . . . . . . .> FROM ventas v;
-No rows affected (0.078 seconds)
+No rows affected (0.064 seconds)
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> SELECT rango_descuento,
-. . . . . . . . . . . . . . . .>        COUNT(*)                                             AS registros,
-. . . . . . . . . . . . . . . .>        ROUND(SUM(sales), 2)                                 AS ventas,
-. . . . . . . . . . . . . . . .>        ROUND(SUM(profit), 2)                                AS ganancia,
-. . . . . . . . . . . . . . . .>        ROUND(SUM(profit) / SUM(sales) * 100, 2)             AS margen_pct,
-. . . . . . . . . . . . . . . .>        SUM(IF(profit < 0, 1, 0))                            AS registros_con_perdida,
-. . . . . . . . . . . . . . . .>        ROUND(SUM(IF(profit < 0, 1, 0)) * 100.0  / COUNT(*), 2) AS pct_no_rentables,
-. . . . . . . . . . . . . . . .>        ROUND(AVG(discount) * 100, 2)                        AS descuento_prom_pct,
-. . . . . . . . . . . . . . . .>        ROUND(SUM(IF(profit < 0, profit, 0)), 2)             AS perdida_total
+. . . . . . . . . . . . . . . .>        COUNT(*)                                 
+            AS registros,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(sales), 2)                     
+            AS ventas,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(profit), 2)                    
+            AS ganancia,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(profit) / SUM(sales) * 100, 2) 
+            AS margen_pct,
+. . . . . . . . . . . . . . . .>        SUM(IF(profit < 0, 1, 0))                
+            AS registros_con_perdida,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(IF(profit < 0, 1, 0)) * 100.0  
+/ COUNT(*), 2) AS pct_no_rentables,
+. . . . . . . . . . . . . . . .>        ROUND(AVG(discount) * 100, 2)            
+            AS descuento_prom_pct,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(IF(profit < 0, profit, 0)), 2) 
+            AS perdida_total
 . . . . . . . . . . . . . . . .> FROM v_ventas_descuento
 . . . . . . . . . . . . . . . .> GROUP BY rango_descuento
 . . . . . . . . . . . . . . . .> ORDER BY rango_descuento;
@@ -42,12 +54,16 @@ No rows affected (0.078 seconds)
 | 3. Medio (20-50%]      | 537        | 298541.41   | -58817.00  | -19.70      | 492                    | 91.62             | 36.70               | -61956.19      |
 | 4. Alto (>50%)         | 856        | 64228.74    | -76559.05  | -119.20     | 856                    | 100.00            | 71.89               | -76559.05      |
 +------------------------+------------+-------------+------------+-------------+------------------------+-------------------+---------------------+----------------+
-4 rows selected (2.505 seconds)
+4 rows selected (2.478 seconds)
 0: jdbc:hive2://localhost:10000> 
-0: jdbc:hive2://localhost:10000> SELECT ROUND(discount * 100, 0)                           AS descuento_pct,
-. . . . . . . . . . . . . . . .>        COUNT(*)                                           AS registros,
-. . . . . . . . . . . . . . . .>        ROUND(SUM(profit) / SUM(sales) * 100, 2)           AS margen_pct,
-. . . . . . . . . . . . . . . .>        ROUND(SUM(IF(profit < 0, 1, 0)) * 100.0  / COUNT(*), 2) AS pct_no_rentables
+0: jdbc:hive2://localhost:10000> SELECT ROUND(discount * 100, 0)                 
+          AS descuento_pct,
+. . . . . . . . . . . . . . . .>        COUNT(*)                                 
+          AS registros,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(profit) / SUM(sales) * 100, 2) 
+          AS margen_pct,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(IF(profit < 0, 1, 0)) * 100.0  
+/ COUNT(*), 2) AS pct_no_rentables
 . . . . . . . . . . . . . . . .> FROM ventas
 . . . . . . . . . . . . . . . .> GROUP BY discount
 . . . . . . . . . . . . . . . .> ORDER BY descuento_pct;
@@ -67,25 +83,33 @@ No rows affected (0.078 seconds)
 | 70             | 418        | -98.66      | 100.00            |
 | 80             | 300        | -180.03     | 100.00            |
 +----------------+------------+-------------+-------------------+
-12 rows selected (2.426 seconds)
+12 rows selected (2.421 seconds)
 0: jdbc:hive2://localhost:10000> 
-0: jdbc:hive2://localhost:10000> SELECT ROUND(CORR(CAST(discount AS DOUBLE), CAS T(profit AS DOUBLE)), 4)                AS corr_descuento_ganancia,
-. . . . . . . . . . . . . . . .>        ROUND(CORR(CAST(discount AS DOUBLE), CAS T(profit / sales AS DOUBLE)), 4)        AS corr_descuento_margen,
-. . . . . . . . . . . . . . . .>        ROUND(CORR(CAST(discount AS DOUBLE), IF( profit < 0, 1.0, 0.0)), 4)              AS corr_descuento_perdida
+0: jdbc:hive2://localhost:10000> SELECT ROUND(CORR(CAST(discount AS DOUBLE), CAS 
+T(profit AS DOUBLE)), 4)                AS corr_descuento_ganancia,
+. . . . . . . . . . . . . . . .>        ROUND(CORR(CAST(discount AS DOUBLE), CAS 
+T(profit / sales AS DOUBLE)), 4)        AS corr_descuento_margen,
+. . . . . . . . . . . . . . . .>        ROUND(CORR(CAST(discount AS DOUBLE), IF( 
+profit < 0, 1.0, 0.0)), 4)              AS corr_descuento_perdida
 . . . . . . . . . . . . . . . .> FROM ventas;
 +--------------------------+------------------------+-------------------------+
 | corr_descuento_ganancia  | corr_descuento_margen  | corr_descuento_perdida  |
 +--------------------------+------------------------+-------------------------+
 | -0.2195                  | -0.8645                | 0.7548                  |
 +--------------------------+------------------------+-------------------------+
-1 row selected (1.323 seconds)
+1 row selected (1.247 seconds)
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> SELECT category, rango_descuento,
-. . . . . . . . . . . . . . . .>        COUNT(*)                                    AS registros,
-. . . . . . . . . . . . . . . .>        ROUND(SUM(sales), 2)                        AS ventas,
-. . . . . . . . . . . . . . . .>        ROUND(SUM(profit), 2)                       AS ganancia,
-. . . . . . . . . . . . . . . .>        ROUND(SUM(profit) / SUM(sales) * 100, 2)    AS margen_pct,
-. . . . . . . . . . . . . . . .>        ROUND(SUM(IF(profit < 0, 1, 0)) * 100.0  / COUNT(*), 2) AS pct_no_rentables
+. . . . . . . . . . . . . . . .>        COUNT(*)                                 
+   AS registros,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(sales), 2)                     
+   AS ventas,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(profit), 2)                    
+   AS ganancia,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(profit) / SUM(sales) * 100, 2) 
+   AS margen_pct,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(IF(profit < 0, 1, 0)) * 100.0  
+/ COUNT(*), 2) AS pct_no_rentables
 . . . . . . . . . . . . . . . .> FROM v_ventas_descuento
 . . . . . . . . . . . . . . . .> GROUP BY category, rango_descuento
 . . . . . . . . . . . . . . . .> ORDER BY category, rango_descuento;
@@ -104,23 +128,33 @@ No rows affected (0.078 seconds)
 | Technology       | 3. Medio (20-50%]      | 148        | 112494.75  | -14178.84  | -12.60      | 79.73             |
 | Technology       | 4. Alto (>50%)         | 23         | 15601.51   | -19579.32  | -125.50     | 100.00            |
 +------------------+------------------------+------------+------------+------------+-------------+-------------------+
-11 rows selected (2.446 seconds)
+11 rows selected (2.437 seconds)
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> WITH sub AS (
 . . . . . . . . . . . . . . . .>   SELECT category, sub_category,
-. . . . . . . . . . . . . . . .>          COUNT(*)                                         AS registros,
-. . . . . . . . . . . . . . . .>          ROUND(AVG(discount) * 100, 2)                    AS descuento_prom_pct,
-. . . . . . . . . . . . . . . .>          SUM(IF(discount > 0.20, 1, 0))                   AS registros_desc_medio_alto,
-. . . . . . . . . . . . . . . .>          ROUND(SUM(sales), 2)                             AS ventas,
-. . . . . . . . . . . . . . . .>          ROUND(SUM(profit), 2)                            AS ganancia,
-. . . . . . . . . . . . . . . .>          ROUND(SUM(IF(discount > 0.20, profit,  0)), 2)   AS ganancia_desc_medio_alto,
-. . . . . . . . . . . . . . . .>          ROUND(SUM(IF(profit < 0, 1, 0)) * 100. 0 / COUNT(*), 2) AS pct_no_rentables
+. . . . . . . . . . . . . . . .>          COUNT(*)                               
+          AS registros,
+. . . . . . . . . . . . . . . .>          ROUND(AVG(discount) * 100, 2)          
+          AS descuento_prom_pct,
+. . . . . . . . . . . . . . . .>          SUM(IF(discount > 0.20, 1, 0))         
+          AS registros_desc_medio_alto,
+. . . . . . . . . . . . . . . .>          ROUND(SUM(sales), 2)                   
+          AS ventas,
+. . . . . . . . . . . . . . . .>          ROUND(SUM(profit), 2)                  
+          AS ganancia,
+. . . . . . . . . . . . . . . .>          ROUND(SUM(IF(discount > 0.20, profit,  
+0)), 2)   AS ganancia_desc_medio_alto,
+. . . . . . . . . . . . . . . .>          ROUND(SUM(IF(profit < 0, 1, 0)) * 100. 
+0 / COUNT(*), 2) AS pct_no_rentables
 . . . . . . . . . . . . . . . .>   FROM ventas
 . . . . . . . . . . . . . . . .>   GROUP BY category, sub_category
 . . . . . . . . . . . . . . . .> )
-. . . . . . . . . . . . . . . .> SELECT RANK() OVER (ORDER BY ganancia_desc_medi o_alto ASC) AS rank_afectacion,
-. . . . . . . . . . . . . . . .>        category, sub_category, registros, descu ento_prom_pct, registros_desc_medio_alto,
-. . . . . . . . . . . . . . . .>        ventas, ganancia, ganancia_desc_medio_al to, pct_no_rentables
+. . . . . . . . . . . . . . . .> SELECT RANK() OVER (ORDER BY ganancia_desc_medi 
+o_alto ASC) AS rank_afectacion,
+. . . . . . . . . . . . . . . .>        category, sub_category, registros, descu 
+ento_prom_pct, registros_desc_medio_alto,
+. . . . . . . . . . . . . . . .>        ventas, ganancia, ganancia_desc_medio_al 
+to, pct_no_rentables
 . . . . . . . . . . . . . . . .> FROM sub
 . . . . . . . . . . . . . . . .> ORDER BY rank_afectacion
 . . . . . . . . . . . . . . . .> LIMIT 10;
@@ -138,15 +172,21 @@ No rows affected (0.078 seconds)
 | 9                | Technology       | Accessories   | 775        | 7.85                | 0                          | 167380.32  | 41936.64   | 0.00                      | 11.74             |
 | 9                | Office Supplies  | Fasteners     | 217        | 8.20                | 0                          | 3024.28    | 949.52     | 0.00                      | 5.53              |
 +------------------+------------------+---------------+------------+---------------------+----------------------------+------------+------------+---------------------------+-------------------+
-10 rows selected (3.635 seconds)
+10 rows selected (3.65 seconds)
 0: jdbc:hive2://localhost:10000> 
-0: jdbc:hive2://localhost:10000> SELECT IF(discount > 0.20, 'Descuento > 20%', ' Descuento <= 20%') AS grupo,
-. . . . . . . . . . . . . . . .>        COUNT(*)                                                   AS registros,
-. . . . . . . . . . . . . . . .>        SUM(IF(profit < 0, 1, 0))                                  AS no_rentables,
-. . . . . . . . . . . . . . . .>        ROUND(SUM(IF(profit < 0, 1, 0)) * 100.0  / COUNT(*), 2)    AS pct_no_rentables,
-. . . . . . . . . . . . . . . .>        ROUND(SUM(profit), 2)                                      AS ganancia_neta
+0: jdbc:hive2://localhost:10000> SELECT IF(discount > 0.20, 'Descuento > 20%', ' 
+Descuento <= 20%') AS grupo,
+. . . . . . . . . . . . . . . .>        COUNT(*)                                 
+                  AS registros,
+. . . . . . . . . . . . . . . .>        SUM(IF(profit < 0, 1, 0))                
+                  AS no_rentables,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(IF(profit < 0, 1, 0)) * 100.0  
+/ COUNT(*), 2)    AS pct_no_rentables,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(profit), 2)                    
+                  AS ganancia_neta
 . . . . . . . . . . . . . . . .> FROM ventas
-. . . . . . . . . . . . . . . .> GROUP BY IF(discount > 0.20, 'Descuento > 20%',  'Descuento <= 20%')
+. . . . . . . . . . . . . . . .> GROUP BY IF(discount > 0.20, 'Descuento > 20%', 
+ 'Descuento <= 20%')
 . . . . . . . . . . . . . . . .> ORDER BY grupo;
 +-------------------+------------+---------------+-------------------+----------------+
 |       grupo       | registros  | no_rentables  | pct_no_rentables  | ganancia_neta  |
@@ -154,6 +194,6 @@ No rows affected (0.078 seconds)
 | Descuento <= 20%  | 8601       | 523           | 6.08              | 421773.08      |
 | Descuento > 20%   | 1393       | 1348          | 96.77             | -135376.06     |
 +-------------------+------------+---------------+-------------------+----------------+
-2 rows selected (2.423 seconds)
+2 rows selected (2.4 seconds)
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> Closing: 0: jdbc:hive2://localhost:10000

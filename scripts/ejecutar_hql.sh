@@ -17,7 +17,7 @@ docker cp "$FILE" $CONTAINER:/tmp/${NAME}.hql
       --hiveconf hive.server2.logging.operation.level=NONE \
       --showHeader=true --outputformat=table \
       -f /tmp/${NAME}.hql 2>&1 | grep -v -E '^SLF4J'
-} > "$OUT"
+} | tee "$OUT"
 if grep -q -E '^Error:' "$OUT"; then
   echo "ATENCION: hubo errores en $OUT"; grep -E '^Error:' "$OUT"; exit 1
 fi

@@ -1,46 +1,65 @@
 ### Ejecución: hql/p07_tendencias_mensuales.hql
-### Fecha: 2026-11-11 11:17:51
+### Fecha: 2026-11-11 11:22:40
 ### Comando: beeline -u jdbc:hive2://localhost:10000 -n root -f p07_tendencias_mensuales.hql
 
 Connecting to jdbc:hive2://localhost:10000
 Connected to: Apache Hive (version 3.1.3)
 Driver: Hive JDBC (version 3.1.3)
 Transaction isolation: TRANSACTION_REPEATABLE_READ
-0: jdbc:hive2://localhost:10000> -- Pregunta 7. Análisis de tendencias temporale s
+s
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> USE superstore;
-No rows affected (0.051 seconds)
+No rows affected (0.04 seconds)
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> DROP TABLE IF EXISTS ventas_mensuales;
-No rows affected (0.018 seconds)
+No rows affected (0.015 seconds)
 0: jdbc:hive2://localhost:10000> CREATE TABLE ventas_mensuales STORED AS ORC AS
-. . . . . . . . . . . . . . . .> SELECT order_year                                    AS anio,
-. . . . . . . . . . . . . . . .>        order_month                                   AS mes,
-. . . . . . . . . . . . . . . .>        CONCAT(order_year, '-', LPAD(order_month , 2, '0')) AS periodo,
-. . . . . . . . . . . . . . . .>        ROUND(SUM(sales), 2)                          AS ventas,
-. . . . . . . . . . . . . . . .>        ROUND(SUM(profit), 2)                         AS ganancia,
-. . . . . . . . . . . . . . . .>        COUNT(DISTINCT order_id)                      AS ordenes
+. . . . . . . . . . . . . . . .> SELECT order_year                               
+     AS anio,
+. . . . . . . . . . . . . . . .>        order_month                              
+     AS mes,
+. . . . . . . . . . . . . . . .>        CONCAT(order_year, '-', LPAD(order_month 
+, 2, '0')) AS periodo,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(sales), 2)                     
+     AS ventas,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(profit), 2)                    
+     AS ganancia,
+. . . . . . . . . . . . . . . .>        COUNT(DISTINCT order_id)                 
+     AS ordenes
 . . . . . . . . . . . . . . . .> FROM ventas
 . . . . . . . . . . . . . . . .> GROUP BY order_year, order_month;
-No rows affected (1.343 seconds)
+No rows affected (1.326 seconds)
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> WITH m AS (
-. . . . . . . . . . . . . . . .>   SELECT periodo, anio, mes, ventas, ganancia,  ordenes,
-. . . . . . . . . . . . . . . .>          LAG(ventas, 1)    OVER (ORDER BY perio do)                AS ventas_mes_ant,
-. . . . . . . . . . . . . . . .>          LAG(ganancia, 1)  OVER (ORDER BY perio do)                AS ganancia_mes_ant,
-. . . . . . . . . . . . . . . .>          LAG(ventas, 1)    OVER (PARTITION BY m es ORDER BY anio)  AS ventas_mismo_mes_anio_ant,
-. . . . . . . . . . . . . . . .>          LAG(ganancia, 1)  OVER (PARTITION BY m es ORDER BY anio)  AS ganancia_mismo_mes_anio_ant,
-. . . . . . . . . . . . . . . .>          AVG(ventas)       OVER (ORDER BY perio do ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS prom_movil_3m_ventas,
-. . . . . . . . . . . . . . . .>          AVG(ganancia)     OVER (ORDER BY perio do ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS prom_movil_3m_ganancia
+. . . . . . . . . . . . . . . .>   SELECT periodo, anio, mes, ventas, ganancia,  
+ordenes,
+. . . . . . . . . . . . . . . .>          LAG(ventas, 1)    OVER (ORDER BY perio 
+do)                AS ventas_mes_ant,
+. . . . . . . . . . . . . . . .>          LAG(ganancia, 1)  OVER (ORDER BY perio 
+do)                AS ganancia_mes_ant,
+. . . . . . . . . . . . . . . .>          LAG(ventas, 1)    OVER (PARTITION BY m 
+es ORDER BY anio)  AS ventas_mismo_mes_anio_ant,
+. . . . . . . . . . . . . . . .>          LAG(ganancia, 1)  OVER (PARTITION BY m 
+es ORDER BY anio)  AS ganancia_mismo_mes_anio_ant,
+. . . . . . . . . . . . . . . .>          AVG(ventas)       OVER (ORDER BY perio 
+do ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS prom_movil_3m_ventas,
+. . . . . . . . . . . . . . . .>          AVG(ganancia)     OVER (ORDER BY perio 
+do ROWS BETWEEN 2 PRECEDING AND CURRENT ROW) AS prom_movil_3m_ganancia
 . . . . . . . . . . . . . . . .>   FROM ventas_mensuales
 . . . . . . . . . . . . . . . .> )
 . . . . . . . . . . . . . . . .> SELECT periodo, ventas, ganancia,
-. . . . . . . . . . . . . . . .>        ROUND((ventas - ventas_mes_ant) / ventas _mes_ant * 100, 2)                         AS var_mensual_pct,
-. . . . . . . . . . . . . . . .>        ROUND((ganancia - ganancia_mes_ant) / AB S(ganancia_mes_ant) * 100, 2)              AS var_ganancia_mensual_pct,
-. . . . . . . . . . . . . . . .>        ventas_mismo_mes_anio_ant                                                           AS ventas_mes_anio_ant,
-. . . . . . . . . . . . . . . .>        ROUND((ventas - ventas_mismo_mes_anio_an t) / ventas_mismo_mes_anio_ant * 100, 2)   AS var_interanual_pct,
-. . . . . . . . . . . . . . . .>        ROUND(prom_movil_3m_ventas, 2)                                                      AS prom_movil_3m,
-. . . . . . . . . . . . . . . .>        ROUND(prom_movil_3m_ganancia, 2)                                                    AS prom_movil_3m_ganancia
+. . . . . . . . . . . . . . . .>        ROUND((ventas - ventas_mes_ant) / ventas 
+_mes_ant * 100, 2)                         AS var_mensual_pct,
+. . . . . . . . . . . . . . . .>        ROUND((ganancia - ganancia_mes_ant) / AB 
+S(ganancia_mes_ant) * 100, 2)              AS var_ganancia_mensual_pct,
+. . . . . . . . . . . . . . . .>        ventas_mismo_mes_anio_ant                
+                                           AS ventas_mes_anio_ant,
+. . . . . . . . . . . . . . . .>        ROUND((ventas - ventas_mismo_mes_anio_an 
+t) / ventas_mismo_mes_anio_ant * 100, 2)   AS var_interanual_pct,
+. . . . . . . . . . . . . . . .>        ROUND(prom_movil_3m_ventas, 2)           
+                                           AS prom_movil_3m,
+. . . . . . . . . . . . . . . .>        ROUND(prom_movil_3m_ganancia, 2)         
+                                           AS prom_movil_3m_ganancia
 . . . . . . . . . . . . . . . .> FROM m
 . . . . . . . . . . . . . . . .> ORDER BY periodo;
 +----------+------------+-----------+------------------+---------------------------+----------------------+---------------------+----------------+-------------------------+
@@ -95,17 +114,21 @@ No rows affected (1.343 seconds)
 | 2017-11  | 118447.83  | 9690.10   | 52.29            | 4.47                      | 79411.97             | 49.16               | 94697.13       | 9985.65                 |
 | 2017-12  | 83829.32   | 8483.35   | -29.23           | -12.45                    | 96999.04             | -13.58              | 93351.36       | 9149.58                 |
 +----------+------------+-----------+------------------+---------------------------+----------------------+---------------------+----------------+-------------------------+
-48 rows selected (3.681 seconds)
+48 rows selected (3.617 seconds)
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> WITH r AS (
 . . . . . . . . . . . . . . . .>   SELECT periodo, ventas, ganancia,
-. . . . . . . . . . . . . . . .>          RANK() OVER (ORDER BY ventas DESC) AS  rank_mayor,
-. . . . . . . . . . . . . . . .>          RANK() OVER (ORDER BY ventas ASC)  AS  rank_menor
+. . . . . . . . . . . . . . . .>          RANK() OVER (ORDER BY ventas DESC) AS  
+rank_mayor,
+. . . . . . . . . . . . . . . .>          RANK() OVER (ORDER BY ventas ASC)  AS  
+rank_menor
 . . . . . . . . . . . . . . . .>   FROM ventas_mensuales
 . . . . . . . . . . . . . . . .> )
-. . . . . . . . . . . . . . . .> SELECT 'MAYOR VENTA' AS tipo, rank_mayor AS pue sto, periodo, ventas, ganancia FROM r WHERE rank_mayor <= 3
+. . . . . . . . . . . . . . . .> SELECT 'MAYOR VENTA' AS tipo, rank_mayor AS pue 
+sto, periodo, ventas, ganancia FROM r WHERE rank_mayor <= 3
 . . . . . . . . . . . . . . . .> UNION ALL
-. . . . . . . . . . . . . . . .> SELECT 'MENOR VENTA', rank_menor, periodo, vent as, ganancia FROM r WHERE rank_menor <= 3
+. . . . . . . . . . . . . . . .> SELECT 'MENOR VENTA', rank_menor, periodo, vent 
+as, ganancia FROM r WHERE rank_menor <= 3
 . . . . . . . . . . . . . . . .> ORDER BY tipo, puesto;
 +--------------+-------------+--------------+-------------+---------------+
 |   _u2.tipo   | _u2.puesto  | _u2.periodo  | _u2.ventas  | _u2.ganancia  |
@@ -117,12 +140,15 @@ No rows affected (1.343 seconds)
 | MENOR VENTA  | 2           | 2015-02      | 11951.41    | 2813.85       |
 | MENOR VENTA  | 3           | 2014-01      | 14236.90    | 2450.19       |
 +--------------+-------------+--------------+-------------+---------------+
-6 rows selected (3.615 seconds)
+6 rows selected (3.595 seconds)
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> SELECT mes,
-. . . . . . . . . . . . . . . .>        ROUND(AVG(ventas), 2)                                      AS ventas_prom,
-. . . . . . . . . . . . . . . .>        ROUND(AVG(ganancia), 2)                                    AS ganancia_prom,
-. . . . . . . . . . . . . . . .>        ROUND(AVG(ventas) * 100 / SUM(AVG(ventas )) OVER (), 2)    AS peso_estacional_pct
+. . . . . . . . . . . . . . . .>        ROUND(AVG(ventas), 2)                    
+                  AS ventas_prom,
+. . . . . . . . . . . . . . . .>        ROUND(AVG(ganancia), 2)                  
+                  AS ganancia_prom,
+. . . . . . . . . . . . . . . .>        ROUND(AVG(ventas) * 100 / SUM(AVG(ventas 
+)) OVER (), 2)    AS peso_estacional_pct
 . . . . . . . . . . . . . . . .> FROM ventas_mensuales
 . . . . . . . . . . . . . . . .> GROUP BY mes
 . . . . . . . . . . . . . . . .> ORDER BY mes;
@@ -142,13 +168,17 @@ No rows affected (1.343 seconds)
 | 11   | 88115.27     | 8867.11        | 15.34                |
 | 12   | 81323.38     | 10842.30       | 14.16                |
 +------+--------------+----------------+----------------------+
-12 rows selected (3.623 seconds)
+12 rows selected (3.585 seconds)
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> SELECT anio,
-. . . . . . . . . . . . . . . .>        ROUND(SUM(ventas), 2)                                              AS ventas_anio,
-. . . . . . . . . . . . . . . .>        ROUND(SUM(SUM(ventas)) OVER (ORDER BY an io), 2)                   AS ventas_acumuladas,
-. . . . . . . . . . . . . . . .>        ROUND(MAX(ventas), 2)                                              AS mejor_mes,
-. . . . . . . . . . . . . . . .>        ROUND(MIN(ventas), 2)                                              AS peor_mes
+. . . . . . . . . . . . . . . .>        ROUND(SUM(ventas), 2)                    
+                          AS ventas_anio,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(SUM(ventas)) OVER (ORDER BY an 
+io), 2)                   AS ventas_acumuladas,
+. . . . . . . . . . . . . . . .>        ROUND(MAX(ventas), 2)                    
+                          AS mejor_mes,
+. . . . . . . . . . . . . . . .>        ROUND(MIN(ventas), 2)                    
+                          AS peor_mes
 . . . . . . . . . . . . . . . .> FROM ventas_mensuales
 . . . . . . . . . . . . . . . .> GROUP BY anio
 . . . . . . . . . . . . . . . .> ORDER BY anio;
@@ -160,6 +190,6 @@ No rows affected (1.343 seconds)
 | 2016  | 609205.60    | 1563985.62         | 96999.04   | 18542.49  |
 | 2017  | 733215.26    | 2297200.88         | 118447.83  | 20301.13  |
 +-------+--------------+--------------------+------------+-----------+
-4 rows selected (3.64 seconds)
+4 rows selected (3.582 seconds)
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> Closing: 0: jdbc:hive2://localhost:10000

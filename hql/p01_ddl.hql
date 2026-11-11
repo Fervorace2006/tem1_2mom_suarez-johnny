@@ -1,8 +1,10 @@
 -- Pregunta 1. Diseño e implementación del modelo de datos (DDL)
 
-CREATE DATABASE IF NOT EXISTS superstore
+DROP DATABASE IF EXISTS superstore CASCADE;
+
+CREATE DATABASE superstore
 COMMENT 'Examen 2do momento - Sample Superstore'
-LOCATION '/user/hive/warehouse/superstore.db';
+LOCATION 'hdfs://yarn-resourcemanager:9000/user/hive/warehouse/superstore.db';
 
 USE superstore;
 
@@ -38,7 +40,7 @@ WITH SERDEPROPERTIES (
   'escapeChar'    = '\\'
 )
 STORED AS TEXTFILE
-LOCATION '/user/hive/raw/superstore'
+LOCATION 'hdfs://yarn-resourcemanager:9000/user/hive/raw/superstore'
 TBLPROPERTIES ('skip.header.line.count' = '1');
 
 DROP TABLE IF EXISTS ventas;

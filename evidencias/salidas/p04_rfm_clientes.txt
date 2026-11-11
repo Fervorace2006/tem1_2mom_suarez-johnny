@@ -1,31 +1,18 @@
 ### Ejecución: hql/p04_rfm_clientes.hql
-### Fecha: 2026-11-11 11:14:44
+### Fecha: 2026-11-11 11:21:31
 ### Comando: beeline -u jdbc:hive2://localhost:10000 -n root -f p04_rfm_clientes.hql
 
 Connecting to jdbc:hive2://localhost:10000
 Connected to: Apache Hive (version 3.1.3)
 Driver: Hive JDBC (version 3.1.3)
 Transaction isolation: TRANSACTION_REPEATABLE_READ
-=========================
-el dataset (2017-12-30).
-ima compra), Frequency
- ventas).
-): así cada puntuación
- se adapta a la distribución
-cy DESC)
-ency ASC)
-ary ASC)
-):
-y M>=4
- o M>=3)  -> fueron buenos y dejaron de comprar
-y M<=2
- reutilizarla.
-=========================
+s mediante RFM
+0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> USE superstore;
 No rows affected (0.067 seconds)
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> DROP TABLE IF EXISTS rfm_clientes;
-No rows affected (0.018 seconds)
+No rows affected (0.015 seconds)
 0: jdbc:hive2://localhost:10000> CREATE TABLE rfm_clientes STORED AS ORC AS
 . . . . . . . . . . . . . . . .> WITH ref AS (
 . . . . . . . . . . . . . . . .>   SELECT MAX(order_date) AS fecha_ref FROM vent 
@@ -77,9 +64,8 @@ core AS STRING), CAST(m_score AS STRING)) AS rfm_codigo,
 . . . . . . . . . . . . . . . .>          ELSE '6. Necesitan atencion'
 . . . . . . . . . . . . . . . .>        END AS segmento_rfm
 . . . . . . . . . . . . . . . .> FROM scores s;
-No rows affected (8.64 seconds)
+No rows affected (9.483 seconds)
 0: jdbc:hive2://localhost:10000> 
- F y M
 0: jdbc:hive2://localhost:10000> SELECT (SELECT MAX(order_date) FROM ventas) AS  
 fecha_referencia,
 . . . . . . . . . . . . . . . .>        COUNT(*)                     AS clientes 
@@ -96,9 +82,8 @@ ry),2) AS m_prom, MAX(monetary) AS m_max
 +-------------------+-----------+--------+---------+--------+--------+---------+--------+--------+----------+-----------+
 | 2017-12-30        | 793       | 0      | 146.8   | 1165   | 1      | 6.3     | 17     | 4.83   | 2896.85  | 25043.05  |
 +-------------------+-----------+--------+---------+--------+--------+---------+--------+--------+----------+-----------+
-1 row selected (5.872 seconds)
+1 row selected (5.755 seconds)
 0: jdbc:hive2://localhost:10000> 
-(justifica los cortes NTILE)
 0: jdbc:hive2://localhost:10000> SELECT r_score AS score,
 . . . . . . . . . . . . . . . .>        CONCAT(MIN(recency), ' - ', MAX(recency) 
 , ' dias') AS rango_recency
@@ -113,7 +98,7 @@ re;
 | 4      | 26 - 52 dias     |
 | 5      | 0 - 26 dias      |
 +--------+------------------+
-5 rows selected (2.457 seconds)
+5 rows selected (2.422 seconds)
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> SELECT f_score AS score,
 . . . . . . . . . . . . . . . .>        CONCAT(MIN(frequency), ' - ', MAX(freque 
@@ -129,7 +114,7 @@ re;
 | 4      | 7 - 9 ordenes    |
 | 5      | 9 - 17 ordenes   |
 +--------+------------------+
-5 rows selected (2.434 seconds)
+5 rows selected (2.409 seconds)
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> SELECT m_score AS score,
 . . . . . . . . . . . . . . . .>        CONCAT(MIN(monetary), ' - ', MAX(monetar 
@@ -145,7 +130,7 @@ re;
 | 4      | 2767.22 - 4282.94 USD   |
 | 5      | 4299.16 - 25043.05 USD  |
 +--------+-------------------------+
-5 rows selected (2.431 seconds)
+5 rows selected (2.414 seconds)
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> SELECT segmento_rfm,
 . . . . . . . . . . . . . . . .>        COUNT(*)                                 
@@ -175,7 +160,7 @@ tary)) OVER (), 2) AS pct_ventas
 | 5. Perdidos / Inactivos    | 119       | 15.01         | 383.1         | 3.4             | 786.76         | 93624.08      | 4.08        |
 | 6. Necesitan atencion      | 154       | 19.42         | 56.4          | 5.4             | 2892.73        | 445481.01     | 19.39       |
 +----------------------------+-----------+---------------+---------------+-----------------+----------------+---------------+-------------+
-6 rows selected (3.606 seconds)
+6 rows selected (3.588 seconds)
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> SELECT customer_id, customer_name, segment, rec 
 ency, frequency, monetary, ganancia, rfm_codigo
@@ -198,9 +183,8 @@ ency, frequency, monetary, ganancia, rfm_codigo
 | PK-19075     | Pete Kriz         | Consumer     | 9        | 12         | 8646.93   | 2038.27   | 555         |
 | DR-12940     | Daniel Raglin     | Home Office  | 50       | 8          | 8350.87   | 2869.08   | 445         |
 +--------------+-------------------+--------------+----------+------------+-----------+-----------+-------------+
-10 rows selected (1.261 seconds)
+10 rows selected (1.25 seconds)
 0: jdbc:hive2://localhost:10000> 
-ayor valor histórico)
 0: jdbc:hive2://localhost:10000> SELECT customer_id, customer_name, segment, rec ency, frequency, monetary, ganancia, rfm_codigo
 . . . . . . . . . . . . . . . .> FROM rfm_clientes
 . . . . . . . . . . . . . . . .> WHERE segmento_rfm = '3. En riesgo de abandono' 
@@ -220,6 +204,6 @@ ayor valor histórico)
 | TB-21400     | Tom Boeckenhauer  | Consumer   | 202      | 7          | 9133.99   | 2798.37   | 235         |
 | PF-19120     | Peter Fuller      | Consumer   | 835      | 4          | 9062.86   | -614.29   | 125         |
 +--------------+-------------------+------------+----------+------------+-----------+-----------+-------------+
-10 rows selected (1.25 seconds)
+10 rows selected (1.244 seconds)
 0: jdbc:hive2://localhost:10000> 
 0: jdbc:hive2://localhost:10000> Closing: 0: jdbc:hive2://localhost:10000
