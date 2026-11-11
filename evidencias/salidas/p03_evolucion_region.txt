@@ -1,0 +1,134 @@
+### Ejecución: hql/p03_evolucion_region.hql
+### Fecha: 2026-11-11 11:10:57
+### Comando: beeline -u jdbc:hive2://localhost:10000 -n root -f p03_evolucion_region.hql
+
+Connecting to jdbc:hive2://localhost:10000
+Connected to: Apache Hive (version 3.1.3)
+Driver: Hive JDBC (version 3.1.3)
+Transaction isolation: TRANSACTION_REPEATABLE_READ
+=========================
+ año
+por (region, año)
+gión para el año anterior
+ RANK() por año
+s (mejor/peor desempeño)
+=========================
+0: jdbc:hive2://localhost:10000> USE superstore;
+No rows affected (0.069 seconds)
+0: jdbc:hive2://localhost:10000> 
+ interanual
+0: jdbc:hive2://localhost:10000> WITH base AS (
+. . . . . . . . . . . . . . . .>   SELECT region,
+. . . . . . . . . . . . . . . .>          order_year            AS anio,
+. . . . . . . . . . . . . . . .>          SUM(sales)            AS ventas,
+. . . . . . . . . . . . . . . .>          SUM(profit)           AS ganancia
+. . . . . . . . . . . . . . . .>   FROM ventas
+. . . . . . . . . . . . . . . .>   GROUP BY region, order_year
+. . . . . . . . . . . . . . . .> ),
+. . . . . . . . . . . . . . . .> evolucion AS (
+. . . . . . . . . . . . . . . .>   SELECT region, anio, ventas, ganancia,
+. . . . . . . . . . . . . . . .>          ganancia / ventas * 100                
+                    AS margen_pct,
+. . . . . . . . . . . . . . . .>          LAG(ventas)   OVER (PARTITION BY regio 
+n ORDER BY anio)    AS ventas_anio_ant,
+. . . . . . . . . . . . . . . .>          LAG(ganancia) OVER (PARTITION BY regio 
+n ORDER BY anio)    AS ganancia_anio_ant,
+. . . . . . . . . . . . . . . .>          RANK() OVER (PARTITION BY anio ORDER B 
+Y ventas DESC)      AS rank_ventas_anio,
+. . . . . . . . . . . . . . . .>          RANK() OVER (PARTITION BY anio ORDER B 
+Y ganancia DESC)    AS rank_ganancia_anio
+. . . . . . . . . . . . . . . .>   FROM base
+. . . . . . . . . . . . . . . .> )
+. . . . . . . . . . . . . . . .> SELECT region, anio,
+. . . . . . . . . . . . . . . .>        ROUND(ventas, 2)                         
+                      AS ventas,
+. . . . . . . . . . . . . . . .>        ROUND(ganancia, 2)                       
+                      AS ganancia,
+. . . . . . . . . . . . . . . .>        ROUND(margen_pct, 2)                     
+                      AS margen_pct,
+. . . . . . . . . . . . . . . .>        ROUND((ventas - ventas_anio_ant) / venta 
+s_anio_ant * 100, 2)  AS var_ventas_pct,
+. . . . . . . . . . . . . . . .>        ROUND((ganancia - ganancia_anio_ant) / A 
+BS(ganancia_anio_ant) * 100, 2) AS var_ganancia_pct,
+. . . . . . . . . . . . . . . .>        rank_ventas_anio,
+. . . . . . . . . . . . . . . .>        rank_ganancia_anio
+. . . . . . . . . . . . . . . .> FROM evolucion
+. . . . . . . . . . . . . . . .> ORDER BY region, anio;
++----------+-------+------------+-----------+-------------+-----------------+-------------------+-------------------+---------------------+
+|  region  | anio  |   ventas   | ganancia  | margen_pct  | var_ventas_pct  | var_ganancia_pct  | rank_ventas_anio  | rank_ganancia_anio  |
++----------+-------+------------+-----------+-------------+-----------------+-------------------+-------------------+---------------------+
+| Central  | 2014  | 103838.16  | 539.55    | 0.52        | NULL            | NULL              | 4                 | 4                   |
+| Central  | 2015  | 102874.22  | 11716.80  | 11.39       | -0.93           | 2071.57           | 3                 | 3                   |
+| Central  | 2016  | 147429.38  | 19899.16  | 13.50       | 43.31           | 69.83             | 3                 | 3                   |
+| Central  | 2017  | 147098.13  | 7550.84   | 5.13        | -0.22           | -62.05            | 3                 | 4                   |
+| East     | 2014  | 128680.46  | 17059.61  | 13.26       | NULL            | NULL              | 2                 | 2                   |
+| East     | 2015  | 156332.06  | 21091.01  | 13.49       | 21.49           | 23.63             | 1                 | 1                   |
+| East     | 2016  | 180685.82  | 20141.60  | 11.15       | 15.58           | -4.50             | 2                 | 2                   |
+| East     | 2017  | 213082.90  | 33230.56  | 15.60       | 17.93           | 64.98             | 2                 | 2                   |
+| South    | 2014  | 103845.84  | 11879.12  | 11.44       | NULL            | NULL              | 3                 | 3                   |
+| South    | 2015  | 71359.98   | 8318.59   | 11.66       | -31.28          | -29.97            | 4                 | 4                   |
+| South    | 2016  | 93610.22   | 17702.81  | 18.91       | 31.18           | 112.81            | 4                 | 4                   |
+| South    | 2017  | 122905.86  | 8848.91   | 7.20        | 31.30           | -50.01            | 4                 | 3                   |
+| West     | 2014  | 147883.03  | 20065.69  | 13.57       | NULL            | NULL              | 1                 | 1                   |
+| West     | 2015  | 139966.25  | 20492.19  | 14.64       | -5.35           | 2.13              | 2                 | 2                   |
+| West     | 2016  | 187480.18  | 24051.61  | 12.83       | 33.95           | 17.37             | 1                 | 1                   |
+| West     | 2017  | 250128.37  | 43808.96  | 17.51       | 33.42           | 82.15             | 1                 | 1                   |
++----------+-------+------------+-----------+-------------+-----------------+-------------------+-------------------+---------------------+
+16 rows selected (5.02 seconds)
+0: jdbc:hive2://localhost:10000> 
+nto total por región
+0: jdbc:hive2://localhost:10000> WITH base AS (
+. . . . . . . . . . . . . . . .>   SELECT region, order_year AS anio, SUM(sales) 
+ AS ventas, SUM(profit) AS ganancia
+. . . . . . . . . . . . . . . .>   FROM ventas
+. . . . . . . . . . . . . . . .>   GROUP BY region, order_year
+. . . . . . . . . . . . . . . .> ),
+. . . . . . . . . . . . . . . .> totales AS (
+. . . . . . . . . . . . . . . .>   SELECT region,
+. . . . . . . . . . . . . . . .>          SUM(ventas)                            
+        AS ventas_total,
+. . . . . . . . . . . . . . . .>          SUM(ganancia)                          
+        AS ganancia_total,
+. . . . . . . . . . . . . . . .>          SUM(ganancia) / SUM(ventas) * 100      
+        AS margen_pct,
+. . . . . . . . . . . . . . . .>          MAX(IF(anio = 2014, ventas, NULL))     
+        AS ventas_2014,
+. . . . . . . . . . . . . . . .>          MAX(IF(anio = 2017, ventas, NULL))     
+        AS ventas_2017
+. . . . . . . . . . . . . . . .>   FROM base
+. . . . . . . . . . . . . . . .>   GROUP BY region
+. . . . . . . . . . . . . . . .> )
+. . . . . . . . . . . . . . . .> SELECT region,
+. . . . . . . . . . . . . . . .>        ROUND(ventas_total, 2)                   
+                   AS ventas_total,
+. . . . . . . . . . . . . . . .>        ROUND(ganancia_total, 2)                 
+                   AS ganancia_total,
+. . . . . . . . . . . . . . . .>        ROUND(margen_pct, 2)                     
+                   AS margen_pct,
+. . . . . . . . . . . . . . . .>        ROUND((ventas_2017 - ventas_2014) / vent 
+as_2014 * 100, 2)  AS crecimiento_14_17_pct,
+. . . . . . . . . . . . . . . .>        ROUND(ventas_total * 100 / SUM(ventas_to 
+tal) OVER (), 2)   AS participacion_ventas_pct,
+. . . . . . . . . . . . . . . .>        RANK() OVER (ORDER BY ganancia_total DES 
+C)                 AS rank_ganancia,
+. . . . . . . . . . . . . . . .>        RANK() OVER (ORDER BY margen_pct DESC)   
+                   AS rank_margen,
+. . . . . . . . . . . . . . . .>        CASE WHEN RANK() OVER (ORDER BY ganancia 
+_total DESC) = 1 THEN 'MEJOR DESEMPENO'
+. . . . . . . . . . . . . . . .>             WHEN RANK() OVER (ORDER BY ganancia 
+_total ASC)  = 1 THEN 'PEOR DESEMPENO'
+. . . . . . . . . . . . . . . .>             ELSE '-' END                        
+                   AS clasificacion
+. . . . . . . . . . . . . . . .> FROM totales
+. . . . . . . . . . . . . . . .> ORDER BY rank_ganancia;
++----------+---------------+-----------------+-------------+------------------------+---------------------------+----------------+--------------+------------------+
+|  region  | ventas_total  | ganancia_total  | margen_pct  | crecimiento_14_17_pct  | participacion_ventas_pct  | rank_ganancia  | rank_margen  |  clasificacion   |
++----------+---------------+-----------------+-------------+------------------------+---------------------------+----------------+--------------+------------------+
+| West     | 725457.82     | 108418.45       | 14.94       | 69.14                  | 31.58                     | 1              | 1            | MEJOR DESEMPENO  |
+| East     | 678781.24     | 91522.78        | 13.48       | 65.59                  | 29.55                     | 2              | 2            | -                |
+| South    | 391721.91     | 46749.43        | 11.93       | 18.35                  | 17.05                     | 3              | 3            | -                |
+| Central  | 501239.89     | 39706.36        | 7.92        | 41.66                  | 21.82                     | 4              | 4            | PEOR DESEMPENO   |
++----------+---------------+-----------------+-------------+------------------------+---------------------------+----------------+--------------+------------------+
+4 rows selected (7.263 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> Closing: 0: jdbc:hive2://localhost:10000
