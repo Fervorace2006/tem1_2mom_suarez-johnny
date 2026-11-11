@@ -1,0 +1,209 @@
+### Ejecución: hql/p08_pareto.hql
+### Fecha: 2026-11-11 11:18:10
+### Comando: beeline -u jdbc:hive2://localhost:10000 -n root -f p08_pareto.hql
+
+Connecting to jdbc:hive2://localhost:10000
+Connected to: Apache Hive (version 3.1.3)
+Driver: Hive JDBC (version 3.1.3)
+Transaction isolation: TRANSACTION_REPEATABLE_READ
+0: jdbc:hive2://localhost:10000> -- Pregunta 8. Análisis Pareto de ventas y rent abilidad
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> USE superstore;
+No rows affected (0.044 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> WITH prod AS (
+. . . . . . . . . . . . . . . .>   SELECT product_id, MIN(product_name) AS produ ct_name, MIN(category) AS category,
+. . . . . . . . . . . . . . . .>          SUM(sales) AS ventas
+. . . . . . . . . . . . . . . .>   FROM ventas
+. . . . . . . . . . . . . . . .>   GROUP BY product_id
+. . . . . . . . . . . . . . . .> ),
+. . . . . . . . . . . . . . . .> acum AS (
+. . . . . . . . . . . . . . . .>   SELECT product_id, product_name, category, ve ntas,
+. . . . . . . . . . . . . . . .>          ROW_NUMBER() OVER (ORDER BY ventas DES C)                                    AS puesto,
+. . . . . . . . . . . . . . . .>          ventas * 100 / SUM(ventas) OVER ()                                           AS pct_individual,
+. . . . . . . . . . . . . . . .>          SUM(ventas) OVER (ORDER BY ventas DESC  ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+. . . . . . . . . . . . . . . .>            * 100 / SUM(ventas) OVER ()                                                AS pct_acumulado,
+. . . . . . . . . . . . . . . .>          COUNT(*) OVER ()                                                             AS total_productos
+. . . . . . . . . . . . . . . .>   FROM prod
+. . . . . . . . . . . . . . . .> )
+. . . . . . . . . . . . . . . .> SELECT puesto, product_id, category, SUBSTR(pro duct_name, 1, 50) AS producto,
+. . . . . . . . . . . . . . . .>        ROUND(ventas, 2) AS ventas, ROUND(pct_in dividual, 3) AS pct_individual,
+. . . . . . . . . . . . . . . .>        ROUND(pct_acumulado, 2) AS pct_acumulado 
+. . . . . . . . . . . . . . . .> FROM acum
+. . . . . . . . . . . . . . . .> WHERE puesto <= 15
+. . . . . . . . . . . . . . . .> ORDER BY puesto;
++---------+------------------+------------------+----------------------------------------------------+-----------+-----------------+----------------+
+| puesto  |    product_id    |     category     |                      producto                      |  ventas   | pct_individual  | pct_acumulado  |
++---------+------------------+------------------+----------------------------------------------------+-----------+-----------------+----------------+
+| 1       | TEC-CO-10004722  | Technology       | Canon imageCLASS 2200 Advanced Copier              | 61599.82  | 2.682           | 2.68           |
+| 2       | OFF-BI-10003527  | Office Supplies  | Fellowes PB500 Electric Punch Plastic Comb Binding | 27453.38  | 1.195           | 3.88           |
+| 3       | TEC-MA-10002412  | Technology       | Cisco TelePresence System EX90 Videoconferencing U | 22638.48  | 0.985           | 4.86           |
+| 4       | FUR-CH-10002024  | Furniture        | HON 5400 Series Task Chairs for Big and Tall       | 21870.58  | 0.952           | 5.81           |
+| 5       | OFF-BI-10001359  | Office Supplies  | GBC DocuBind TL300 Electric Binding System         | 19823.48  | 0.863           | 6.68           |
+| 6       | OFF-BI-10000545  | Office Supplies  | GBC Ibimaster 500 Manual ProClick Binding System   | 19024.50  | 0.828           | 7.51           |
+| 7       | TEC-CO-10001449  | Technology       | Hewlett Packard LaserJet 3310 Copier               | 18839.69  | 0.820           | 8.33           |
+| 8       | TEC-MA-10001127  | Technology       | HP Designjet T520 Inkjet Large Format Printer - 24 | 18374.90  | 0.800           | 9.13           |
+| 9       | OFF-BI-10004995  | Office Supplies  | GBC DocuBind P400 Electric Binding System          | 17965.07  | 0.782           | 9.91           |
+| 10      | OFF-SU-10000151  | Office Supplies  | High Speed Automatic Electric Letter Opener        | 17030.31  | 0.741           | 10.65          |
+| 11      | TEC-MA-10000822  | Technology       | Lexmark MX611dhe Monochrome Laser Printer          | 16829.90  | 0.733           | 11.38          |
+| 12      | OFF-SU-10002881  | Office Supplies  | Martin Yale Chadless Opener Electric Letter Opener | 16656.20  | 0.725           | 12.11          |
+| 13      | OFF-BI-10001120  | Office Supplies  | Ibico EPK-21 Electric Binding System               | 15875.92  | 0.691           | 12.80          |
+| 14      | FUR-BO-10004834  | Furniture        | Riverside Palais Royal Lawyers Bookcase, Royale Ch | 15610.97  | 0.680           | 13.48          |
+| 15      | TEC-MA-10001047  | Technology       | 3D Systems Cube Printer, 2nd Generation, Magenta   | 14299.89  | 0.622           | 14.10          |
++---------+------------------+------------------+----------------------------------------------------+-----------+-----------------+----------------+
+15 rows selected (4.867 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> WITH prod AS (
+. . . . . . . . . . . . . . . .>   SELECT product_id, SUM(sales) AS ventas FROM  ventas GROUP BY product_id
+. . . . . . . . . . . . . . . .> ),
+. . . . . . . . . . . . . . . .> acum AS (
+. . . . . . . . . . . . . . . .>   SELECT product_id, ventas,
+. . . . . . . . . . . . . . . .>          SUM(ventas) OVER (ORDER BY ventas DESC  ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+. . . . . . . . . . . . . . . .>            * 100 / SUM(ventas) OVER () AS pct_a cumulado,
+. . . . . . . . . . . . . . . .>          (SUM(ventas) OVER (ORDER BY ventas DES C ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) - ventas)
+. . . . . . . . . . . . . . . .>            * 100 / SUM(ventas) OVER () AS pct_a cumulado_previo,
+. . . . . . . . . . . . . . . .>          COUNT(*) OVER () AS total_productos
+. . . . . . . . . . . . . . . .>   FROM prod
+. . . . . . . . . . . . . . . .> )
+. . . . . . . . . . . . . . . .> SELECT 'VENTAS' AS analisis,
+. . . . . . . . . . . . . . . .>        MAX(total_productos)                                               AS total_productos,
+. . . . . . . . . . . . . . . .>        SUM(IF(pct_acumulado_previo < 80, 1, 0))                           AS productos_80pct,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(IF(pct_acumulado_previo < 80,  1, 0)) * 100.0 / MAX(total_productos), 2) AS pct_productos,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(IF(pct_acumulado_previo < 80,  ventas, 0)), 2)           AS monto_concentrado
+. . . . . . . . . . . . . . . .> FROM acum;
++-----------+------------------+------------------+----------------+--------------------+
+| analisis  | total_productos  | productos_80pct  | pct_productos  | monto_concentrado  |
++-----------+------------------+------------------+----------------+--------------------+
+| VENTAS    | 1862             | 414              | 22.23          | 1838610.14         |
++-----------+------------------+------------------+----------------+--------------------+
+1 row selected (4.802 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> WITH prod AS (
+. . . . . . . . . . . . . . . .>   SELECT product_id, MIN(product_name) AS produ ct_name, MIN(category) AS category,
+. . . . . . . . . . . . . . . .>          SUM(profit) AS ganancia
+. . . . . . . . . . . . . . . .>   FROM ventas
+. . . . . . . . . . . . . . . .>   GROUP BY product_id
+. . . . . . . . . . . . . . . .> ),
+. . . . . . . . . . . . . . . .> acum AS (
+. . . . . . . . . . . . . . . .>   SELECT product_id, product_name, category, ga nancia,
+. . . . . . . . . . . . . . . .>          ROW_NUMBER() OVER (ORDER BY ganancia D ESC)                                   AS puesto,
+. . . . . . . . . . . . . . . .>          ganancia * 100 / SUM(ganancia) OVER ()                                        AS pct_individual_neto,
+. . . . . . . . . . . . . . . .>          ganancia * 100 / SUM(IF(ganancia > 0,  ganancia, 0)) OVER ()                  AS pct_individual_positivo,
+. . . . . . . . . . . . . . . .>          SUM(ganancia) OVER (ORDER BY ganancia  DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+. . . . . . . . . . . . . . . .>            * 100 / SUM(ganancia) OVER ()                                               AS pct_acum_neto
+. . . . . . . . . . . . . . . .>   FROM prod
+. . . . . . . . . . . . . . . .> )
+. . . . . . . . . . . . . . . .> SELECT puesto, product_id, category, SUBSTR(pro duct_name, 1, 50) AS producto,
+. . . . . . . . . . . . . . . .>        ROUND(ganancia, 2) AS ganancia,
+. . . . . . . . . . . . . . . .>        ROUND(pct_individual_neto, 3) AS pct_ind ividual,
+. . . . . . . . . . . . . . . .>        ROUND(pct_acum_neto, 2) AS pct_acumulado 
+. . . . . . . . . . . . . . . .> FROM acum
+. . . . . . . . . . . . . . . .> WHERE puesto <= 15
+. . . . . . . . . . . . . . . .> ORDER BY puesto;
++---------+------------------+------------------+----------------------------------------------------+-----------+-----------------+----------------+
+| puesto  |    product_id    |     category     |                      producto                      | ganancia  | pct_individual  | pct_acumulado  |
++---------+------------------+------------------+----------------------------------------------------+-----------+-----------------+----------------+
+| 1       | TEC-CO-10004722  | Technology       | Canon imageCLASS 2200 Advanced Copier              | 25199.93  | 8.799           | 8.80           |
+| 2       | OFF-BI-10003527  | Office Supplies  | Fellowes PB500 Electric Punch Plastic Comb Binding | 7753.04   | 2.707           | 11.51          |
+| 3       | TEC-CO-10001449  | Technology       | Hewlett Packard LaserJet 3310 Copier               | 6983.88   | 2.439           | 13.94          |
+| 4       | TEC-CO-10003763  | Technology       | Canon PC1060 Personal Laser Copier                 | 4570.93   | 1.596           | 15.54          |
+| 5       | TEC-AC-10002049  | Technology       | Logitech G19 Programmable Gaming Keyboard          | 4425.34   | 1.545           | 17.09          |
+| 6       | TEC-MA-10001127  | Technology       | HP Designjet T520 Inkjet Large Format Printer - 24 | 4094.98   | 1.430           | 18.52          |
+| 7       | TEC-MA-10003979  | Technology       | Ativa V4110MDD Micro-Cut Shredder                  | 3772.95   | 1.317           | 19.83          |
+| 8       | TEC-MA-10001047  | Technology       | 3D Systems Cube Printer, 2nd Generation, Magenta   | 3717.97   | 1.298           | 21.13          |
+| 9       | OFF-BI-10001120  | Office Supplies  | Ibico EPK-21 Electric Binding System               | 3345.28   | 1.168           | 22.30          |
+| 10      | TEC-MA-10000045  | Technology       | Zebra ZM400 Thermal Label Printer                  | 3343.54   | 1.167           | 23.47          |
+| 11      | OFF-AP-10002945  | Office Supplies  | Honeywell Enviracaire Portable HEPA Air Cleaner fo | 3247.02   | 1.134           | 24.60          |
+| 12      | TEC-CO-10002095  | Technology       | Hewlett Packard 610 Color Digital Copier / Printer | 3124.94   | 1.091           | 25.69          |
+| 13      | TEC-AC-10003033  | Technology       | Plantronics CS510 - Over-the-Head monaural Wireles | 3085.03   | 1.077           | 26.77          |
+| 14      | TEC-CO-10001046  | Technology       | Canon Imageclass D680 Copier / Fax                 | 2799.96   | 0.978           | 27.75          |
+| 15      | OFF-BI-10003925  | Office Supplies  | Fellowes PB300 Plastic Comb Binding Machine        | 2518.06   | 0.879           | 28.63          |
++---------+------------------+------------------+----------------------------------------------------+-----------+-----------------+----------------+
+15 rows selected (4.775 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> WITH prod AS (
+. . . . . . . . . . . . . . . .>   SELECT product_id, SUM(profit) AS ganancia FR OM ventas GROUP BY product_id
+. . . . . . . . . . . . . . . .> ),
+. . . . . . . . . . . . . . . .> acum AS (
+. . . . . . . . . . . . . . . .>   SELECT product_id, ganancia,
+. . . . . . . . . . . . . . . .>          SUM(ganancia) OVER () AS ganancia_neta ,
+. . . . . . . . . . . . . . . .>          SUM(IF(ganancia > 0, ganancia, 0)) OVE R () AS ganancia_positiva,
+. . . . . . . . . . . . . . . .>          SUM(ganancia) OVER (ORDER BY ganancia  DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) - ganancia AS acum_previo ,
+. . . . . . . . . . . . . . . .>          COUNT(*) OVER () AS total_productos
+. . . . . . . . . . . . . . . .>   FROM prod
+. . . . . . . . . . . . . . . .> )
+. . . . . . . . . . . . . . . .> SELECT 'GANANCIA (base neta)' AS analisis,
+. . . . . . . . . . . . . . . .>        MAX(total_productos) AS total_productos, 
+. . . . . . . . . . . . . . . .>        SUM(IF(acum_previo < 0.8 * ganancia_neta , 1, 0)) AS productos_80pct,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(IF(acum_previo < 0.8 * gananci a_neta, 1, 0)) * 100.0 / MAX(total_productos), 2) AS pct_productos,
+. . . . . . . . . . . . . . . .>        ROUND(MAX(ganancia_neta), 2) AS base_gan ancia
+. . . . . . . . . . . . . . . .> FROM acum
+. . . . . . . . . . . . . . . .> UNION ALL
+. . . . . . . . . . . . . . . .> SELECT 'GANANCIA (base solo positivos)',
+. . . . . . . . . . . . . . . .>        SUM(IF(ganancia > 0, 1, 0)),
+. . . . . . . . . . . . . . . .>        SUM(IF(ganancia > 0 AND acum_previo < 0. 8 * ganancia_positiva, 1, 0)),
+. . . . . . . . . . . . . . . .>        ROUND(SUM(IF(ganancia > 0 AND acum_previ o < 0.8 * ganancia_positiva, 1, 0)) * 100.0 / SUM(IF(ganancia > 0, 1, 0)), 2),
+. . . . . . . . . . . . . . . .>        ROUND(MAX(ganancia_positiva), 2)
+. . . . . . . . . . . . . . . .> FROM acum;
++---------------------------------+----------------------+----------------------+--------------------+--------------------+
+|          _u1.analisis           | _u1.total_productos  | _u1.productos_80pct  | _u1.pct_productos  | _u1.base_ganancia  |
++---------------------------------+----------------------+----------------------+--------------------+--------------------+
+| GANANCIA (base solo positivos)  | 1557                 | 340                  | 21.84              | 363118.15          |
+| GANANCIA (base neta)            | 1862                 | 164                  | 8.81               | 286397.02          |
++---------------------------------+----------------------+----------------------+--------------------+--------------------+
+2 rows selected (10.74 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> WITH prod AS (
+. . . . . . . . . . . . . . . .>   SELECT product_id, SUM(profit) AS ganancia FR OM ventas GROUP BY product_id
+. . . . . . . . . . . . . . . .> ),
+. . . . . . . . . . . . . . . .> acum AS (
+. . . . . . . . . . . . . . . .>   SELECT ganancia,
+. . . . . . . . . . . . . . . .>          SUM(ganancia) OVER (ORDER BY ganancia  DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW)
+. . . . . . . . . . . . . . . .>            * 100 / SUM(ganancia) OVER () AS pct _acum
+. . . . . . . . . . . . . . . .>   FROM prod
+. . . . . . . . . . . . . . . .> )
+. . . . . . . . . . . . . . . .> SELECT CASE WHEN ganancia > 0 THEN 'Con gananci a' WHEN ganancia = 0 THEN 'Sin ganancia' ELSE 'Con perdida' END AS grupo,
+. . . . . . . . . . . . . . . .>        COUNT(*)                 AS productos,
+. . . . . . . . . . . . . . . .>        ROUND(SUM(ganancia), 2)  AS ganancia,
+. . . . . . . . . . . . . . . .>        ROUND(MAX(pct_acum), 2)  AS max_pct_acum ulado
+. . . . . . . . . . . . . . . .> FROM acum
+. . . . . . . . . . . . . . . .> GROUP BY CASE WHEN ganancia > 0 THEN 'Con ganan cia' WHEN ganancia = 0 THEN 'Sin ganancia' ELSE 'Con perdida' END;
++---------------+------------+------------+--------------------+
+|     grupo     | productos  |  ganancia  | max_pct_acumulado  |
++---------------+------------+------------+--------------------+
+| Con ganancia  | 1557       | 363118.15  | 126.79             |
+| Con perdida   | 299        | -76721.13  | 126.79             |
+| Sin ganancia  | 6          | 0.00       | 126.79             |
++---------------+------------+------------+--------------------+
+3 rows selected (4.823 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> WITH prod AS (
+. . . . . . . . . . . . . . . .>   SELECT product_id, MIN(category) AS category,  SUM(sales) AS ventas, SUM(profit) AS ganancia
+. . . . . . . . . . . . . . . .>   FROM ventas GROUP BY product_id
+. . . . . . . . . . . . . . . .> ),
+. . . . . . . . . . . . . . . .> v AS (
+. . . . . . . . . . . . . . . .>   SELECT product_id, category, ventas, ganancia ,
+. . . . . . . . . . . . . . . .>          (SUM(ventas) OVER (ORDER BY ventas DES C ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) - ventas)
+. . . . . . . . . . . . . . . .>            / SUM(ventas) OVER () AS prev_v,
+. . . . . . . . . . . . . . . .>          (SUM(ganancia) OVER (ORDER BY ganancia  DESC ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW) - ganancia)
+. . . . . . . . . . . . . . . .>            / SUM(ganancia) OVER () AS prev_g
+. . . . . . . . . . . . . . . .>   FROM prod
+. . . . . . . . . . . . . . . .> )
+. . . . . . . . . . . . . . . .> SELECT category,
+. . . . . . . . . . . . . . . .>        SUM(IF(prev_v < 0.8, 1, 0))                               AS en_pareto_ventas,
+. . . . . . . . . . . . . . . .>        SUM(IF(prev_g < 0.8 AND ganancia > 0, 1,  0))             AS en_pareto_ganancia,
+. . . . . . . . . . . . . . . .>        SUM(IF(prev_v < 0.8 AND prev_g < 0.8 AND  ganancia > 0, 1, 0)) AS en_ambos,
+. . . . . . . . . . . . . . . .>        SUM(IF(prev_v < 0.8 AND ganancia < 0, 1,  0))             AS pareto_ventas_con_perdida
+. . . . . . . . . . . . . . . .> FROM v
+. . . . . . . . . . . . . . . .> GROUP BY category
+. . . . . . . . . . . . . . . .> ORDER BY category;
++------------------+-------------------+---------------------+-----------+----------------------------+
+|     category     | en_pareto_ventas  | en_pareto_ganancia  | en_ambos  | pareto_ventas_con_perdida  |
++------------------+-------------------+---------------------+-----------+----------------------------+
+| Furniture        | 156               | 31                  | 31        | 73                         |
+| Office Supplies  | 101               | 52                  | 44        | 25                         |
+| Technology       | 157               | 81                  | 80        | 13                         |
++------------------+-------------------+---------------------+-----------+----------------------------+
+3 rows selected (7.219 seconds)
+0: jdbc:hive2://localhost:10000> 
+0: jdbc:hive2://localhost:10000> Closing: 0: jdbc:hive2://localhost:10000
