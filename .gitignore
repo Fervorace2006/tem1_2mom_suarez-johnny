@@ -1,0 +1,11 @@
+# Archivos temporales / sistema
+*.log
+*.tmp
+.DS_Store
+Thumbs.db
+~$*
+# Entornos Python
+__pycache__/
+.venv/
+# Copia convertida a UTF-8 (se regenera con scripts/cargar_datos.sh)
+data/superstore_utf8.csv
