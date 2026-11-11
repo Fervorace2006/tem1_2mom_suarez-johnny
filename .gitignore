@@ -9,3 +9,6 @@ __pycache__/
 .venv/
 # Copia convertida a UTF-8 (se regenera con scripts/cargar_datos.sh)
 data/superstore_utf8.csv
+
+# Capturas para el informe Word (no se versionan)
+evidencias/capturas/
